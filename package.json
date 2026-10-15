@@ -1,0 +1,10 @@
+{
+  "name": "egitijam",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EğitiJAM oyun vitrini, takım sayfaları ve jüri değerlendirme platformu",
+  "scripts": {
+    "start": "node --no-warnings --env-file-if-exists=.env server.js"
+  },
+  "engines": { "node": ">=22.13" }
+}

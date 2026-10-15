@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yönetim · EğitiJAM</title>
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="stylesheet" href="tema.css">
+<link rel="stylesheet" href="ortak.css">
+<script src="tema.js"></script>
+<style>
+  .duzen { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; max-width: 1400px; margin: 20px auto; padding: 0 16px; align-items: start; }
+  @media (max-width: 860px) { .duzen { grid-template-columns: 1fr; } }
+  .menu { position: sticky; top: 76px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+  @media (max-width: 860px) { .menu { position: static; flex-direction: row; overflow-x: auto; } }
+  .menu button { display: flex; align-items: center; gap: 10px; border: 0; background: transparent; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--text); text-align: left; white-space: nowrap; }
+  .menu button:hover { background: var(--panel2); }
+  .menu button.secili { background: var(--renk-ust-bar-secili-zemin); color: var(--renk-ust-bar-secili-metin); }
+  .menu button .ik { color: var(--muted); }
+  .menu button.secili .ik { color: inherit; }
+  .bolum { display: none; flex-direction: column; gap: 20px; min-width: 0; }
+  .bolum.acik { display: flex; }
+  .bolum > .kart { padding: 20px; }
+
+  .ozet { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .ozet .kart { padding: 16px; }
+  .ozet b { display: block; font-family: var(--yazi-baslik); font-size: 32px; line-height: 1.1; color: var(--renk-baslik); }
+  .ozet span { font-size: 13px; color: var(--muted); }
+  .bayrak { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .bayrak:first-of-type { border-top: 0; }
+  .bayrak p { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+
+  .arac { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .arac input[type=search] { flex: 1 1 220px; width: auto; }
+  .tablo-kap { overflow-x: auto; margin-top: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; background: var(--panel2); position: sticky; top: 0; white-space: nowrap; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:hover td { background: #fcfcfd; }
+  td small { display: block; color: var(--muted); font-size: 12px; }
+  .durum-ik { display: inline-flex; gap: 3px; }
+  .durum-ik .ik { width: 18px; height: 18px; padding: 2px; border-radius: 4px; color: var(--line-strong); }
+  .durum-ik .ik.var { color: var(--ok); background: var(--ok-soft); }
+  .islem { display: flex; gap: 2px; justify-content: flex-end; flex-wrap: nowrap; }
+  .kucuk-kapak { width: 56px; height: 44px; object-fit: cover; border-radius: 6px; background: var(--renk-vitrin); display: block; }
+  .sira-no { font-family: var(--yazi-baslik); font-weight: 800; font-size: 18px; color: var(--accent-text); }
+  td input.rozet { width: 150px; padding: 6px 8px; font-size: 13px; }
+  .ayrinti td { background: var(--panel2); }
+  .ayrinti table { background: var(--panel); border-radius: 8px; }
+
+  .satir-ed { display: grid; gap: 8px; align-items: center; margin-top: 8px; }
+  .satir-ed.j { grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) auto auto auto; }
+  .satir-ed.k { grid-template-columns: minmax(0, 3fr) minmax(0, 1.2fr) 90px auto auto; }
+  @media (max-width: 700px) { .satir-ed.j, .satir-ed.k { grid-template-columns: 1fr 1fr; } }
+  .satir-ed .bas { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .sifre-liste { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .tehlike { border-color: var(--err-line) !important; }
+  .tehlike h2 { color: var(--err) !important; }
+  .ust .kim { margin-left: auto; display: flex; gap: 8px; }
+  .oda-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-top: 14px; }
+  .oda { border: 1px solid var(--line); border-radius: var(--yaricap-kart); background: var(--panel); display: flex; flex-direction: column; min-width: 0; }
+  .oda.odasiz { border-style: dashed; background: var(--panel2); }
+  .oda > header { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .oda > header b { color: var(--renk-baslik); }
+  .oda > header small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .oda h4 { margin: 10px 12px 4px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .oda ul { list-style: none; margin: 0; padding: 0 12px 8px; font-size: 13.5px; }
+  .oda li { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .oda li:last-child { border-bottom: 0; }
+  .oda li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .oda li select { width: auto; max-width: 96px; padding: 3px 6px; font-size: 12px; border-radius: 6px; }
+  .asama { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; }
+  .asama button { border: 0; background: var(--panel); padding: 9px 16px; font-weight: 600; cursor: pointer; }
+  .asama button.secili { background: var(--renk-birincil); color: #fff; }
+  .sonuc-bas { display: flex; align-items: baseline; gap: 10px; margin: 22px 0 0; flex-wrap: wrap; }
+  .sonuc-bas h3 { margin: 0; font-size: 16px; color: var(--renk-baslik); }
+  .sonuc-bas span { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div id="girisEkran" class="giris hidden">
+  <form class="kart" id="girisForm">
+    <img class="logo" src="genc.png" alt="">
+    <h1>Yönetim paneli</h1>
+    <p class="alt">EğitiJAM platform yönetimi</p>
+    <label class="l" for="gSif">Yönetici şifresi</label>
+    <input type="password" id="gSif" autocomplete="current-password" required>
+    <button class="btn" type="submit">Giriş yap</button>
+    <div class="hata" id="gHata" role="alert"></div>
+    <a class="geri" href="./">← Oyun vitrinine dön</a>
+  </form>
+</div>
+
+<div id="panel" class="hidden">
+  <header class="ust">
+    <div class="ust-ic">
+      <a class="gt-brand" href="./"><img src="genc.png" alt=""><span class="gt-yazi"><small>MEB · YEĞİTEK</small><b>GençTek</b></span></a>
+      <a class="ej" href="./">Eğiti<span>JAM</span> <small style="font-weight:600;color:var(--muted);font-size:13px">Yönetim</small></a>
+      <div class="kim"><a class="btn ghost sm" href="./" target="_blank"><svg class="ik"><use href="ikonlar.svg#eye"/></svg> Vitrin</a>
+        <button class="btn ghost sm" id="cikis" type="button"><svg class="ik"><use href="ikonlar.svg#log-out"/></svg> Çıkış</button></div>
+    </div>
+  </header>
+
+  <div class="duzen">
+    <nav class="kart menu" id="menu">
+      <button type="button" data-b="genel" class="secili"><svg class="ik"><use href="ikonlar.svg#layout-dashboard"/></svg> Genel bakış</button>
+      <button type="button" data-b="takimlar"><svg class="ik"><use href="ikonlar.svg#users"/></svg> Takımlar</button>
+      <button type="button" data-b="mesajlar"><svg class="ik"><use href="ikonlar.svg#message-square"/></svg> Mesajlar<span id="mesajSayac"></span></button>
+      <button type="button" data-b="mentorler"><svg class="ik"><use href="ikonlar.svg#graduation-cap"/></svg> Mentörler</button>
+      <button type="button" data-b="sonuclar"><svg class="ik"><use href="ikonlar.svg#trophy"/></svg> Sonuçlar</button>
+      <button type="button" data-b="juriler"><svg class="ik"><use href="ikonlar.svg#vote"/></svg> Jüriler</button>
+      <button type="button" data-b="odalar"><svg class="ik"><use href="ikonlar.svg#door-open"/></svg> Jüri odaları</button>
+      <button type="button" data-b="kriterler"><svg class="ik"><use href="ikonlar.svg#clipboard-list"/></svg> Kriterler</button>
+      <button type="button" data-b="arsiv"><svg class="ik"><use href="ikonlar.svg#package"/></svg> Geçmiş yıllar</button>
+      <button type="button" data-b="etkinlik"><svg class="ik"><use href="ikonlar.svg#calendar-days"/></svg> Etkinlik</button>
+      <button type="button" data-b="guvenlik"><svg class="ik"><use href="ikonlar.svg#shield-check"/></svg> Güvenlik & veri</button>
+    </nav>
+
+    <main>
+      <!-- Genel bakış -->
+      <section class="bolum acik" id="b-genel">
+        <div class="ozet" id="ozet"></div>
+        <div class="kart">
+          <h2>Etkinlik aşamaları</h2>
+          <p>Etkinlik ilerledikçe bu anahtarları sırayla değiştirin.</p>
+          <div class="bayrak"><div><b>Teslim açık</b><p>Takımlar sayfalarını düzenleyip dosya yükleyebilir. Kapatınca sayfalar kilitlenir (yönetici yine düzenleyebilir).</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="teslimAcik"><span class="sr">Teslim açık</span></label></div>
+          <div class="bayrak"><div><b>Oylama açık</b><p>Jüriler puan verebilir, puanlarını değiştirebilir ya da silebilir.</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="oylamaAcik"><span class="sr">Oylama açık</span></label></div>
+          <div class="bayrak"><div><b>Sonuçlar açıklandı</b><p>Sonuçlar sekmesinde takımlara verdiğiniz ödül ve derece rozetleri vitrinde görünür. Puanlar hiçbir zaman herkese açık olmaz.</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="sonuclarAcik"><span class="sr">Sonuçlar açıklandı</span></label></div>
+          <div class="bayrak"><div><b>Jüri geri bildirimleri takımlara açık</b><p>Jürilerin "Takıma geri bildirim" alanına yazdıkları, takım panelinde jüri adı ve puan olmadan görünür. Jürilerin özel notları hiçbir zaman gösterilmez. <span id="geriSayisi"></span></p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="geriBildirimAcik"><span class="sr">Jüri geri bildirimleri takımlara açık</span></label></div>
+          <div class="bayrak"><div><b>Tema başlangıçta açıklansın</b><p>Açıksa tema, Etkinlik sekmesindeki başlangıç anına kadar vitrinde "? ? ?" olarak görünür ve o an kendiliğinden açılır. Başlangıç zamanı girilmemişse tema hep görünür. <span id="temaDurum"></span></p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="temaGizle"><span class="sr">Tema başlangıçta açıklansın</span></label></div>
+          <div class="bayrak"><div><b>Renk teması</b><p>Tüm sayfaların renkleri.</p></div>
+            <select id="temaSec" style="width:auto"><option value="d">GençTek kırmızı</option><option value="b">Sade kurumsal mavi</option></select></div>
+        </div>
+        <div class="kart">
+          <h2>Bağlantılar</h2>
+          <p>Takımlara ve jürilere iletilecek adresler.</p>
+          <div id="baglantilar" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>
+        </div>
+      </section>
+
+      <!-- Takımlar -->
+      <section class="bolum" id="b-takimlar">
+        <div class="kart">
+          <h2>Takımlar</h2>
+          <p>Her takım bir kullanıcı adı ve şifreyle kendi oyun sayfasını düzenler. Şifreler yalnızca oluşturulduğunda gösterilir; kaybedilirse sıfırlayın.</p>
+          <div class="arac" style="margin-top:12px">
+            <input type="search" id="tAra" placeholder="Takım, oyun, il, okul ara" aria-label="Ara">
+            <select id="tFiltre" style="width:auto" aria-label="Süzgeç">
+              <option value="">Tümü</option><option value="hazir">Sayfası hazır</option><option value="eksik">Oyun dosyası yok</option>
+              <option value="bos">Hiç düzenlenmemiş</option><option value="gizli">Vitrinden kaldırılmış</option>
+            </select>
+            <button class="btn" type="button" id="tEkle"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Takım ekle</button>
+            <button class="btn ghost" type="button" id="tToplu"><svg class="ik"><use href="ikonlar.svg#upload"/></svg> Toplu ekle</button>
+          </div>
+          <div class="tablo-kap"><table>
+            <thead><tr><th></th><th>Takım / oyun</th><th>İl · okul</th><th>Sayfa</th><th>Vitrinde</th><th>Güncelleme</th><th></th></tr></thead>
+            <tbody id="tTablo"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- Mesajlar -->
+      <section class="bolum" id="b-mesajlar">
+        <div class="kart" style="padding:4px 20px;margin-bottom:16px">
+          <div class="bayrak"><div><b>Genel sohbet açık</b><p>Takımlar ve mentörler Genel sohbet kanalına yazabilir. Kapatınca kanal yalnızca okunur (yönetim yine yazar). Jüriler bu kanalı hiç görmez.</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="genelSohbet"><span class="sr">Genel sohbet açık</span></label></div>
+        </div>
+        <div class="kart" id="modKart" style="margin-bottom:16px">
+          <h2 style="display:flex;align-items:center;gap:8px"><svg class="ik"><use href="ikonlar.svg#flag"/></svg> Moderasyon <span id="modSayi"></span></h2>
+          <p>Kullanıcıların bildirdiği mesajlar ve susturulan kişiler. Bir mesajın üzerine gelip <b>sustur</b> simgesine basarak da susturabilirsiniz. Küfür ve argo, mesaj gönderilirken otomatik olarak yıldızlanır.</p>
+          <div id="modListe"></div>
+          <details style="margin-top:12px">
+            <summary style="cursor:pointer;font-weight:600">Ek yasaklı kelimeler</summary>
+            <p style="font-size:13.5px;color:var(--muted)">Yerleşik küfür listesine ek olarak yıldızlanacak kelimeler. Virgülle ya da satır satır yazın. Kelime tam eşleşir (büyük/küçük harf fark etmez).</p>
+            <textarea id="yasakKelimeler" rows="3" placeholder="kelime1, kelime2"></textarea>
+            <button class="btn sm" type="button" id="yasakKaydet" style="margin-top:8px">Kaydet</button>
+          </details>
+        </div>
+        <div id="sohbet"></div>
+      </section>
+
+      <!-- Mentörler -->
+      <section class="bolum" id="b-mentorler">
+        <div class="kart">
+          <h2>Mentörler</h2>
+          <p>Mentörler <b>/mentor</b> adresinden giriş yapar. Tüm takımların mesaj kanallarını görür ve yanıtlar; kendilerine atanan takımların sayfasını düzenleyebilir, şifresini sıfırlayabilir. Şifreler yalnızca oluşturulduğunda gösterilir.</p>
+          <div class="arac" style="margin-top:12px">
+            <input type="search" id="mAra" placeholder="Mentör, alan ara" aria-label="Ara">
+            <button class="btn" type="button" id="mEkle"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Mentör ekle</button>
+            <button class="btn ghost" type="button" id="mToplu"><svg class="ik"><use href="ikonlar.svg#upload"/></svg> Toplu ekle</button>
+          </div>
+          <div class="tablo-kap"><table>
+            <thead><tr><th>Mentör</th><th>Uzmanlık</th><th>Takımları</th><th>Oturum</th><th></th></tr></thead>
+            <tbody id="mTablo"></tbody>
+          </table></div>
+          <div class="bayrak" style="margin-top:12px;border-top:1px solid var(--line)"><div><b>Mentörler takım ekleyebilir</b><p>Açıksa mentörler (ör. danışman öğretmenler) kendi takımlarını oluşturur ve şifrelerini kendileri alır. Kapalıysa takımları yönetim ekler ve atar.</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="mentorKayit"><span class="sr">Mentörler takım ekleyebilir</span></label></div>
+        </div>
+      </section>
+
+      <!-- Sonuçlar -->
+      <section class="bolum" id="b-sonuclar">
+        <div class="kart">
+          <h2>Sonuçlar</h2>
+          <p>Sıralama jüri ortalamasına göredir; jüri odaları varsa ön eleme oda içinde, dereceler final sıralamasından belirlenir. Satıra tıklayınca jürilerin kriter puanları ve notları açılır. "Rozet" sütununa yazdığınız derece/ödül ("1.", "Jüri Özel Ödülü", "Sergilenmeye Değer" …) sonuçlar açıklandığında vitrinde görünür.</p>
+          <div class="arac" style="margin-top:12px">
+            <button class="btn" type="button" id="xlsx"><svg class="ik"><use href="ikonlar.svg#download"/></svg> Puanları indir (XLSX)</button>
+            <span id="oyIlerleme" style="color:var(--muted);font-size:14px"></span>
+          </div>
+          <div id="sonucAlan"></div>
+        </div>
+      </section>
+
+      <!-- Jüri odaları -->
+      <section class="bolum" id="b-odalar">
+        <div class="kart">
+          <h2>Jüri odaları</h2>
+          <p>Jüri çoksa (ör. 16 jüri, 4 oda) takımlar odalara bölünür: <b>ön elemede</b> her jüri yalnızca kendi odasındaki takımları puanlar, sıralama oda içinde yapılır. Her odadan en iyiler <b>finale</b> çıkar; finalde tüm jüriler finalistleri puanlar ve dereceler final sıralamasından belirlenir. Oda ve jüri sayısı serbesttir; odalardaki jüri ve takım sayıları eşit olmak zorunda değildir. Oda eklemezseniz tüm jüriler tüm takımları puanlar.</p>
+          <div id="oListe" style="margin-top:12px"></div>
+          <div class="arac" style="margin-top:12px">
+            <button class="btn ghost" type="button" id="oEkle"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Oda ekle</button>
+            <button class="btn" type="button" id="oKaydet"><svg class="ik"><use href="ikonlar.svg#save"/></svg> Odaları kaydet</button>
+            <span style="color:var(--muted);font-size:13px">Silinen odanın jürileri ve takımları odasız kalır; verilen puanlar silinmez.</span>
+          </div>
+        </div>
+        <div class="kart" id="oAsamaKart">
+          <h2>Aşama</h2>
+          <p>Jürilerin şu anda hangi turu puanladığı. Ön eleme ve final puanları ayrı saklanır; aşamalar arasında geri dönülebilir.</p>
+          <div class="arac" style="margin-top:12px">
+            <div class="asama" id="oAsama"><button type="button" data-asama="on">Ön eleme (odalarda)</button><button type="button" data-asama="final">Final (tüm jüriler)</button></div>
+          </div>
+          <div class="arac" style="margin-top:16px">
+            <span>Her odadan ilk</span><input type="number" id="oFinalSayi" min="1" max="100" style="width:80px">
+            <span>takım finale çıksın</span>
+            <button class="btn ghost" type="button" id="oFinalSec"><svg class="ik"><use href="ikonlar.svg#trophy"/></svg> Finalistleri ön elemeden seç</button>
+          </div>
+          <p class="yard">Finalistleri Sonuçlar sekmesindeki "Final" kutularıyla elle de ekleyip çıkarabilirsiniz (ör. eşitlik ya da jüri özel kararı).</p>
+          <div id="oFinalistler" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div class="kart" id="oDagilimKart">
+          <h2>Oda dağılımı</h2>
+          <p>Jürileri ve takımları odalara atayın. Otomatik dağıtım yayındaki takımları odalara eşit böler ve aynı okuldan, sonra aynı ilden takımları farklı odalara koymaya çalışır. Sonra açılır listelerle elle taşıyabilirsiniz.</p>
+          <div class="arac" style="margin-top:12px">
+            <button class="btn" type="button" id="oDagitBos"><svg class="ik"><use href="ikonlar.svg#users"/></svg> Odasız takımları dağıt</button>
+            <button class="btn ghost" type="button" id="oDagitHepsi"><svg class="ik"><use href="ikonlar.svg#rotate-ccw"/></svg> Tümünü yeniden dağıt</button>
+            <input type="search" id="oAra" placeholder="Takım ya da jüri ara" aria-label="Ara" style="flex:1 1 200px;width:auto">
+          </div>
+          <div class="oda-izgara" id="oIzgara"></div>
+        </div>
+      </section>
+
+      <!-- Jüriler -->
+      <section class="bolum" id="b-juriler">
+        <div class="kart">
+          <h2>Jüriler</h2>
+          <p>Kullanıcı adı boş bırakılırsa addan üretilir (unvanlar atılır: "Prof. Dr. Ali Demir" → alidemir). Jüri çıkarılırsa verdiği puanlar da silinir.</p>
+          <div class="satir-ed j"><span class="bas">Ad soyad</span><span class="bas">Kullanıcı adı</span><span></span><span></span><span></span></div>
+          <div id="jListe"></div>
+          <div class="arac" style="margin-top:12px">
+            <button class="btn ghost" type="button" id="jEkle"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Jüri ekle</button>
+            <button class="btn" type="button" id="jKaydet"><svg class="ik"><use href="ikonlar.svg#save"/></svg> Jüri listesini kaydet</button>
+          </div>
+        </div>
+        <div class="kart">
+          <h2>Ortak jüri şifresi</h2>
+          <p id="ortakDurum"></p>
+          <div class="arac"><input type="text" id="ortakSifre" placeholder="Yeni ortak şifre (en az 4 karakter)" style="flex:1 1 240px;width:auto">
+            <button class="btn" type="button" id="ortakKaydet">Ortak şifreyi belirle</button></div>
+        </div>
+      </section>
+
+      <!-- Kriterler -->
+      <section class="bolum" id="b-kriterler">
+        <div class="kart">
+          <h2>Değerlendirme kriterleri</h2>
+          <p>Jüriler her kriter için 0 ile azami puan arasında puan verir. "Ek puan" işaretli kriterler toplamın üstüne eklenir (100 + 5 gibi). Oy varken kriter eklenip çıkarılamaz.</p>
+          <div class="satir-ed k"><span class="bas">Kriter</span><span class="bas">Kısa ad</span><span class="bas">Azami</span><span class="bas">Ek puan</span><span></span></div>
+          <div id="kListe"></div>
+          <div class="arac" style="margin-top:12px">
+            <button class="btn ghost" type="button" id="kEkle"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Kriter ekle</button>
+            <button class="btn" type="button" id="kKaydet"><svg class="ik"><use href="ikonlar.svg#save"/></svg> Kriterleri kaydet</button>
+            <span id="kToplam" style="color:var(--muted);font-size:14px"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Geçmiş yıllar -->
+      <section class="bolum" id="b-arsiv">
+        <form class="kart" id="aForm">
+          <h2>itch.io'dan içe aktar</h2>
+          <p>Geçmiş yılların jam sayfasının adresini yapıştırın. Oyunların adı, kısa açıklaması, kapağı ve yapımcıları alınır; vitrinde yıl sekmesi olarak görünür. Oyunların kendisi itch.io'da kalır, kartlar oraya bağlanır. Aynı jam'i yeniden aktarmak bilgileri günceller, rozetleri korur.</p>
+          <div class="arac" style="margin-top:12px">
+            <input type="url" id="aAdres" placeholder="https://itch.io/jam/egitijam2025" style="flex:2 1 280px;width:auto" required>
+            <input type="text" id="aDonem" placeholder="Yıl, ör. 2025" maxlength="20" style="flex:0 1 140px;width:auto" required>
+            <button class="btn" type="submit" id="aBtn"><svg class="ik"><use href="ikonlar.svg#download"/></svg> İçe aktar</button>
+          </div>
+          <p class="yard">Örnek: https://itch.io/jam/egitijam2025 → 2025 · https://itch.io/jam/egitijam-2024 → 2024</p>
+        </form>
+        <div id="aListe" style="display:flex;flex-direction:column;gap:20px"></div>
+      </section>
+
+      <!-- Etkinlik -->
+      <section class="bolum" id="b-etkinlik">
+        <form class="kart" id="eForm">
+          <h2>Etkinlik bilgileri</h2>
+          <p>Vitrinin üst bölümünde ve "Etkinlik & Kurallar" kısmında görünür.</p>
+          <div class="satir">
+            <div><label class="l" for="eAd">Etkinlik adı</label><input type="text" id="eAd" maxlength="80"></div>
+            <div><label class="l" for="eKurum">Düzenleyen</label><input type="text" id="eKurum" maxlength="40"></div>
+          </div>
+          <label class="l" for="eAlt">Alt başlık</label><input type="text" id="eAlt" maxlength="120">
+          <div class="satir">
+            <div><label class="l" for="eTema">Bu yılın teması</label><input type="text" id="eTema" maxlength="120"></div>
+            <div><label class="l" for="eTarih">Tarih</label><input type="text" id="eTarih" maxlength="80"></div>
+            <div><label class="l" for="eDonem">Yıl <small>(vitrindeki sekme adı)</small></label><input type="text" id="eDonem" maxlength="20"></div>
+          </div>
+          <div class="satir">
+            <div><label class="l" for="eBas">Başlangıç <small>(geri sayım için, Türkiye saati)</small></label><input type="datetime-local" id="eBas"></div>
+            <div><label class="l" for="eBit">Bitiş / teslim son anı</label><input type="datetime-local" id="eBit"></div>
+          </div>
+          <p class="yard">Vitrinde, takım ve mentör panellerinde geri sayım gösterilir: başlamadan önce başlangıca, etkinlik sürerken teslime. Boş bırakılırsa sayaç görünmez. Bitiş anında teslim kendiliğinden kapanmaz; Genel bakış'taki "Teslim açık" anahtarını kapatın.</p>
+          <label class="l" for="eAciklama">Etkinlik açıklaması</label><textarea id="eAciklama" rows="5" maxlength="4000"></textarea>
+          <label class="l" for="eKurallar">Kurallar <small>(her satır bir madde)</small></label><textarea id="eKurallar" rows="9" maxlength="8000"></textarea>
+          <div class="arac" style="margin-top:16px"><button class="btn" type="submit"><svg class="ik"><use href="ikonlar.svg#save"/></svg> Kaydet</button></div>
+        </form>
+      </section>
+
+      <!-- Güvenlik & veri -->
+      <section class="bolum" id="b-guvenlik">
+        <div class="kart">
+          <h2>Yönetici şifresi</h2>
+          <p id="adminDurum"></p>
+          <div class="arac"><input type="password" id="adminSifre" placeholder="Yeni yönetici şifresi (en az 6 karakter)" autocomplete="new-password" style="flex:1 1 240px;width:auto">
+            <button class="btn" type="button" id="adminKaydet">Değiştir</button></div>
+        </div>
+        <div class="kart">
+          <h2>Oturumlar</h2>
+          <p>Tüm takım, mentör ve jüri oturumlarını kapatır (sizin oturumunuz açık kalır). Herkes yeniden giriş yapar.</p>
+          <button class="btn ghost" type="button" id="oturumKapat"><svg class="ik"><use href="ikonlar.svg#log-out"/></svg> Tüm oturumları kapat</button>
+        </div>
+        <div class="kart">
+          <h2>Yedek</h2>
+          <p>Ayarlar, takımlar ve mentörler (şifre özetleriyle), oylar ve mesajlar tek bir JSON dosyasına yazılır. Yüklenen oyun dosyaları ve görseller yedeğe girmez; onlar sunucudaki <code>urunler/</code> klasöründedir.</p>
+          <div class="arac">
+            <button class="btn" type="button" id="yedekAl"><svg class="ik"><use href="ikonlar.svg#download"/></svg> Yedek indir</button>
+            <button class="btn ghost" type="button" id="yedekYukle"><svg class="ik"><use href="ikonlar.svg#upload"/></svg> Yedekten geri yükle</button>
+            <input type="file" id="yedekDosya" accept=".json,application/json" hidden>
+          </div>
+        </div>
+        <div class="kart tehlike">
+          <h2>Oyları sıfırla</h2>
+          <p>Tüm jüri puanları kalıcı olarak silinir. Takımlar ve sayfaları etkilenmez. Önce yedek almanız önerilir.</p>
+          <div class="arac"><input type="text" id="sifirlaOnay" placeholder='Onay için SIFIRLA yazın' style="flex:0 1 240px;width:auto">
+            <button class="btn danger" type="button" id="sifirla"><svg class="ik"><use href="ikonlar.svg#trash-2"/></svg> Oyları sıfırla</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Takım ekle / düzenle -->
+<div class="pencere hidden" id="takimPencere">
+  <form class="kart" id="takimForm">
+    <div class="bas"><h2 id="tpBaslik">Takım ekle</h2><button class="ikbtn" type="button" data-kapat><svg class="ik"><use href="ikonlar.svg#x"/></svg></button></div>
+    <label class="l" for="tpAd">Takım adı</label><input type="text" id="tpAd" maxlength="80" required>
+    <label class="l" for="tpKul">Kullanıcı adı <small>(oyun sayfasının adresi de olur: /oyun/kullaniciadi; boşsa takım adından üretilir)</small></label>
+    <input type="text" id="tpKul" maxlength="30" autocapitalize="none">
+    <div class="satir">
+      <div><label class="l" for="tpIl">İl</label><input type="text" id="tpIl" maxlength="40"></div>
+      <div><label class="l" for="tpDan">Danışman öğretmen</label><input type="text" id="tpDan" maxlength="80"></div>
+    </div>
+    <label class="l" for="tpOkul">Okul</label><input type="text" id="tpOkul" maxlength="120">
+    <div id="tpDuzenAlan">
+      <label class="l" for="tpRozet">Rozet <small>(ödül/derece; sonuçlar açıklanınca vitrinde görünür)</small></label><input type="text" id="tpRozet" maxlength="60">
+      <label class="anahtar" style="margin-top:16px"><input type="checkbox" id="tpYayinda"> Vitrinde göster</label>
+    </div>
+    <div class="hata" id="tpHata"></div>
+    <div class="ayak"><button class="btn ghost" type="button" data-kapat>Vazgeç</button><button class="btn" type="submit">Kaydet</button></div>
+  </form>
+</div>
+
+<!-- Toplu ekle -->
+<div class="pencere hidden" id="topluPencere">
+  <form class="kart" id="topluForm" style="max-width:720px">
+    <div class="bas"><h2>Toplu takım ekle</h2><button class="ikbtn" type="button" data-kapat><svg class="ik"><use href="ikonlar.svg#x"/></svg></button></div>
+    <p style="color:var(--muted);font-size:14px;margin:4px 0 0">Her satıra bir takım: <b>Takım adı; İl; Okul; Danışman öğretmen</b>. Excel'den dört sütunu kopyalayıp doğrudan yapıştırabilirsiniz. Kullanıcı adları ve şifreler otomatik üretilir.</p>
+    <textarea id="topluMetin" rows="12" style="margin-top:12px;font-family:ui-monospace,Consolas,monospace;font-size:13px" placeholder="Kodçu Kartallar; Ankara; Atatürk Ortaokulu; Ayşe Yılmaz&#10;Piksel Ustaları; İzmir; Bilim Lisesi; Mehmet Kaya"></textarea>
+    <div class="hata" id="topluHata"></div>
+    <div class="ayak"><button class="btn ghost" type="button" data-kapat>Vazgeç</button><button class="btn" type="submit">Takımları oluştur</button></div>
+  </form>
+</div>
+
+<!-- Mentör ekle / düzenle -->
+<div class="pencere hidden" id="mentorPencere">
+  <form class="kart" id="mentorForm" style="max-width:640px">
+    <div class="bas"><h2 id="mpBaslik">Mentör ekle</h2><button class="ikbtn" type="button" data-kapat><svg class="ik"><use href="ikonlar.svg#x"/></svg></button></div>
+    <div class="satir">
+      <div><label class="l" for="mpAd">Ad soyad</label><input type="text" id="mpAd" maxlength="80" required></div>
+      <div><label class="l" for="mpAlan">Uzmanlık <small>(ör. Programlama, Görsel tasarım)</small></label><input type="text" id="mpAlan" maxlength="80"></div>
+    </div>
+    <div id="mpKulAlan"><label class="l" for="mpKul">Kullanıcı adı <small>(boşsa addan üretilir)</small></label><input type="text" id="mpKul" maxlength="30" autocapitalize="none"></div>
+    <label class="l">Atanan takımlar <small id="mpSay"></small></label>
+    <input type="search" id="mpAra" placeholder="Takım ara" aria-label="Takım ara">
+    <div id="mpTakimlar" style="max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px;padding:4px 10px"></div>
+    <div class="hata" id="mpHata"></div>
+    <div class="ayak"><button class="btn ghost" type="button" data-kapat>Vazgeç</button><button class="btn" type="submit">Kaydet</button></div>
+  </form>
+</div>
+<div class="pencere hidden" id="mTopluPencere">
+  <form class="kart" id="mTopluForm" style="max-width:640px">
+    <div class="bas"><h2>Toplu mentör ekle</h2><button class="ikbtn" type="button" data-kapat><svg class="ik"><use href="ikonlar.svg#x"/></svg></button></div>
+    <p style="color:var(--muted);font-size:14px;margin:4px 0 0">Her satıra bir mentör: <b>Ad Soyad; Uzmanlık</b>. Excel'den iki sütunu yapıştırabilirsiniz. Takımları sonra "Düzenle" ile atayın.</p>
+    <textarea id="mTopluMetin" rows="10" style="margin-top:12px;font-family:ui-monospace,Consolas,monospace;font-size:13px" placeholder="Ayşe Yılmaz; Programlama&#10;Mehmet Kaya; Görsel tasarım"></textarea>
+    <div class="hata" id="mTopluHata"></div>
+    <div class="ayak"><button class="btn ghost" type="button" data-kapat>Vazgeç</button><button class="btn" type="submit">Mentörleri oluştur</button></div>
+  </form>
+</div>
+
+<!-- Üretilen şifreler -->
+<div class="pencere hidden" id="sifrePencere">
+  <div class="kart" style="max-width:760px">
+    <div class="bas"><h2>Giriş bilgileri</h2><button class="ikbtn" type="button" data-kapat><svg class="ik"><use href="ikonlar.svg#x"/></svg></button></div>
+    <div class="bilgi u" style="margin-top:8px">Şifreler yalnızca şimdi gösteriliyor. Pencereyi kapatmadan önce listeyi indirin ya da kopyalayın.</div>
+    <div class="tablo-kap" style="max-height:50vh"><table class="sifre-liste"><thead><tr><th id="sifreBas">Takım</th><th>Kullanıcı adı</th><th>Şifre</th></tr></thead><tbody id="sifreTablo"></tbody></table></div>
+    <div class="ayak">
+      <button class="btn ghost" type="button" id="sifreKopyala"><svg class="ik"><use href="ikonlar.svg#copy"/></svg> Kopyala</button>
+      <button class="btn" type="button" id="sifreIndir"><svg class="ik"><use href="ikonlar.svg#download"/></svg> CSV indir</button>
+    </div>
+  </div>
+</div>
+
+<script src="ortak.js"></script>
+<script src="sohbet.js"></script>
+<script>
+const { esc, ik, api, dosya, bildir } = EJ;
+const $ = id => document.getElementById(id);
+let D = null, uretilen = [], acikAyrinti = null;
+const A = (y, p, b) => api(y, 'api/admin/' + p, b, 'yonetim');
+
+function girisGoster() { $('girisEkran').classList.remove('hidden'); $('panel').classList.add('hidden'); $('gSif').focus(); }
+
+async function yenile(veri) {
+  try { D = veri || await A('GET', 'durum'); }
+  catch (e) { if (e.status === 401) { EJ.jetonYaz('yonetim', null); return girisGoster(); } return bildir(e.message, 'h'); }
+  window.temaUygula(D.tema);
+  $('girisEkran').classList.add('hidden'); $('panel').classList.remove('hidden');
+  genelCiz(); takimCiz(); mentorCiz(); odaCiz(); sonucCiz(); juriCiz(); kriterCiz(); etkinlikCiz(); guvenlikCiz(); arsivCiz();
+  if (!sohbet) {
+    sohbet = EJSohbet({ kok: $('sohbet'), rol: 'yonetim', odaklan: () => document.querySelector('#menu button[data-b="mesajlar"]').click(), degisti: (n, y, b) => {
+      $('mesajSayac').innerHTML = (b ? `<span class="sayac-rozet y" title="Bildirilen mesaj" style="background:#dc2626">${b}</span>` : '') + (y ? `<span class="sayac-rozet y" title="Yardım bekleyen takım">${y}</span>` : '') + (n ? `<span class="sayac-rozet">${n > 99 ? '99+' : n}</span>` : '');
+      if (b !== modSon) { modSon = b; modYukle(); }
+    } });
+    sohbet.goster($('b-mesajlar').classList.contains('acik'));
+  }
+}
+let sohbet = null;
+
+// ---- Moderasyon: bildirilen mesajlar ve susturulanlar ----
+let modSon = -1, modVeri = { bildirimler: [], susturmalar: [] };
+async function modYukle() {
+  try { modVeri = await api('GET', 'api/mesaj/bildirimler', undefined, 'yonetim'); } catch { return; }
+  const B = modVeri.bildirimler, S = modVeri.susturmalar, tarih = t => new Date(t).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  $('modSayi').innerHTML = B.length ? `<span class="sayac-rozet" style="background:#dc2626">${B.length}</span>` : '';
+  let h = B.length ? B.map((b, i) => {
+    const m = b.mesaj, ad = m.uye ? `${m.uye} (${m.ad})` : m.ad;
+    const metin = (m.metin || '').replace(/<@[^>]+>/g, '@…').slice(0, 300) || (m.ekler?.length ? `[${m.ekler.length} ek dosya]` : '');
+    return `<div style="border:1px solid var(--line);border-left:3px solid #dc2626;border-radius:var(--yaricap-kutu);padding:12px 14px;margin-top:10px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline"><b>${esc(ad)}</b><small style="color:var(--muted)">${esc(b.kanalAd)} · ${tarih(m.zaman)}</small></div>
+      <div style="margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(metin)}</div>
+      <div style="font-size:13px;color:var(--muted)">${b.raporlar.length} bildirim: ${b.raporlar.map(r => esc(r.ad) + (r.neden ? ` — "${esc(r.neden)}"` : '')).join('; ')}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn ghost sm" type="button" data-mod-git="${i}">${ik('message-square')} Mesaja git</button>
+        <button class="btn danger sm" type="button" data-mod-sil="${i}">${ik('trash-2')} Mesajı sil</button>
+        ${m.rol !== 'admin' ? `<button class="btn ghost sm" type="button" data-mod-sus="${i}">${ik('ban')} Yazanı sustur</button>` : ''}
+        <button class="btn ghost sm" type="button" data-mod-kapat="${i}">${ik('check')} Sorun yok, kapat</button>
+      </div></div>`;
+  }).join('') : '<p class="bos" style="padding:8px 0;margin:0">Bildirilen mesaj yok.</p>';
+  if (S.length) h += `<h3 style="margin:16px 0 6px;font-size:14px">Susturulanlar</h3>` + S.map((x, i) => `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)">
+      <b>${esc(x.ad)}</b><small style="color:var(--muted)">${tarih(x.bitis)} saatine kadar${x.neden ? ' · ' + esc(x.neden) : ''}</small>
+      <button class="btn ghost sm" type="button" data-mod-ac="${i}" style="margin-left:auto">Susturmayı kaldır</button></div>`).join('');
+  $('modListe').innerHTML = h;
+}
+$('modListe').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const x = modVeri.bildirimler[b.dataset.modGit ?? b.dataset.modSil ?? b.dataset.modSus ?? b.dataset.modKapat];
+  try {
+    if (b.dataset.modGit !== undefined) { sohbet.mesajaGit(x.kanal, x.mesaj.id); $('sohbet').scrollIntoView({ behavior: 'smooth' }); return; }
+    if (b.dataset.modSil !== undefined) { if (!confirm('Mesaj silinsin mi?')) return; await api('DELETE', 'api/mesaj?id=' + x.mesaj.id, undefined, 'yonetim'); bildir('Mesaj silindi', 'o'); }
+    if (b.dataset.modSus !== undefined) await sohbet.susturSor(x.mesaj.kim, x.mesaj.ad);
+    if (b.dataset.modKapat !== undefined) await api('POST', 'api/mesaj/bildirim-kapat', { id: x.mesaj.id }, 'yonetim');
+    if (b.dataset.modAc !== undefined) { const k = modVeri.susturmalar[b.dataset.modAc]; await api('POST', 'api/mesaj/sustur', { kim: k.kim, dakika: 0 }, 'yonetim'); bildir(`${k.ad} için susturma kaldırıldı`, 'o'); }
+  } catch (err) { return bildir(err.message, 'h'); }
+  modYukle();
+};
+$('yasakKaydet').onclick = () => islem('PUT', 'bayraklar', { yasakKelimeler: $('yasakKelimeler').value }, 'Kaydedildi').catch(() => {});
+
+// ---- Geçmiş yıllar ----
+function arsivCiz() {
+  const gruplar = {};
+  for (const a of D.arsiv) (gruplar[a.donem] ||= []).push(a);
+  const yillar = Object.keys(gruplar).sort().reverse();
+  $('aListe').innerHTML = yillar.length ? yillar.map(y => {
+    const l = gruplar[y];
+    return `<details class="kart" style="padding:20px">
+      <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <span><b style="font-size:18px">${esc(y)}</b> <span style="color:var(--muted)">· ${l.length} oyun${l.some(a => a.gizli) ? ` · ${l.filter(a => a.gizli).length} gizli` : ''}</span></span>
+        <button class="btn danger sm" type="button" data-asil="${esc(y)}">${ik('trash-2')} ${esc(y)} arşivini sil</button>
+      </summary>
+      <div class="tablo-kap"><table><thead><tr><th></th><th>Oyun</th><th>Yapımcı</th><th>Vitrinde</th><th>Rozet</th></tr></thead><tbody>
+      ${l.map(a => `<tr><td>${a.kapak ? `<img class="kucuk-kapak" src="arsiv-kapak/${encodeURIComponent(a.kapak)}" alt="">` : '<span class="kucuk-kapak"></span>'}</td>
+        <td><a href="${esc(a.baglanti)}" target="_blank" rel="noopener noreferrer"><b>${esc(a.baslik)}</b></a><small>${esc(a.kisa)}</small></td>
+        <td>${esc(a.yapimci)}</td>
+        <td><label class="anahtar"><input type="checkbox" data-agizli="${esc(y)}|${a.id}" ${a.gizli ? '' : 'checked'}><span class="sr">Vitrinde</span></label></td>
+        <td><input class="rozet" type="text" maxlength="60" value="${esc(a.rozet)}" data-arozet="${esc(y)}|${a.id}" placeholder="—" aria-label="Rozet"></td></tr>`).join('')}
+      </tbody></table></div></details>`;
+  }).join('') : '<div class="kart bos">Henüz geçmiş yıl aktarılmadı.</div>';
+}
+$('aForm').onsubmit = async e => {
+  e.preventDefault();
+  $('aBtn').disabled = true; $('aBtn').textContent = 'Aktarılıyor…';
+  try {
+    const d = await islem('POST', 'arsiv', { adres: $('aAdres').value, donem: $('aDonem').value });
+    bildir(`${d.aktarilan.donem}: ${d.aktarilan.sayi} oyun aktarıldı (${d.aktarilan.kapak} kapak)`, 'o');
+    $('aAdres').value = $('aDonem').value = '';
+  } catch {}
+  finally { $('aBtn').disabled = false; $('aBtn').innerHTML = `${ik('download')} İçe aktar`; }
+};
+$('aListe').addEventListener('change', e => {
+  const t = e.target.closest('[data-agizli],[data-arozet]'); if (!t) return;
+  const [donem, id] = (t.dataset.agizli || t.dataset.arozet).split('|');
+  const tr = t.closest('tr');
+  islem('PUT', 'arsiv', { donem, id: +id, rozet: tr.querySelector('[data-arozet]').value, gizli: !tr.querySelector('[data-agizli]').checked }, 'Kaydedildi')
+    .then(() => document.querySelectorAll('#aListe details').forEach(d => d.querySelector('summary b').textContent === donem && (d.open = true)))
+    .catch(() => {});
+});
+$('aListe').addEventListener('click', e => {
+  const b = e.target.closest('[data-asil]'); if (!b) return;
+  e.preventDefault();
+  if (!confirm(`${b.dataset.asil} arşivi ve kapakları silinsin mi? (itch.io'daki oyunlar etkilenmez)`)) return;
+  islem('DELETE', 'arsiv?donem=' + encodeURIComponent(b.dataset.asil), undefined, 'Arşiv silindi').catch(() => {});
+});
+// İşlem sonrası sunucu güncel durumu döner
+async function islem(y, p, b, msj) {
+  try { const d = await A(y, p, b); await yenile(d); if (msj) bildir(msj, 'o'); return d; }
+  catch (e) { bildir(e.message, 'h'); throw e; }
+}
+
+// Sekmeler
+$('menu').onclick = e => {
+  const b = e.target.closest('button[data-b]'); if (!b) return;
+  document.querySelectorAll('#menu button').forEach(x => x.classList.toggle('secili', x === b));
+  document.querySelectorAll('.bolum').forEach(s => s.classList.toggle('acik', s.id === 'b-' + b.dataset.b));
+  if (sohbet) sohbet.goster(b.dataset.b === 'mesajlar');
+  try { sessionStorage.setItem('ejSekme', b.dataset.b); } catch {}
+};
+try { const s = sessionStorage.getItem('ejSekme'); if (s) document.querySelector(`#menu button[data-b="${s}"]`)?.click(); } catch {}
+
+// ---- Genel ----
+function genelCiz() {
+  const T = D.teams;
+  const turR = D.asama === 'final' && D.odalar.length ? D.finalRanking : D.ranking;
+  const oySay = turR.filter(r => r.yayinda).reduce((a, r) => a + r.n, 0), bek = turR.filter(r => r.yayinda).reduce((a, r) => a + r.beklenen, 0);
+  const kutular = [
+    [T.length, 'takım'], [T.filter(t => t.baslik).length, 'sayfası açılmış'], [T.filter(t => t.oyun).length, 'web sürümü yüklü'],
+    [T.filter(t => t.indir).length, 'indirilebilir dosyalı'], [`${oySay} / ${bek}`, D.odalar.length ? (D.asama === 'final' ? 'final puanı verildi' : 'ön eleme puanı verildi') : 'jüri puanı verildi']
+  ];
+  $('ozet').innerHTML = kutular.map(([b, s]) => `<div class="kart"><b>${b}</b><span>${s}</span></div>`).join('');
+  document.querySelectorAll('[data-bayrak]').forEach(c => c.checked = !!D[c.dataset.bayrak]);
+  if (document.activeElement !== $('yasakKelimeler')) $('yasakKelimeler').value = (D.yasakKelimeler || []).join(', ');
+  $('geriSayisi').textContent = D.geriBildirimSayisi ? `Şu an ${D.geriBildirimSayisi} geri bildirim yazılmış.` : 'Henüz geri bildirim yazılmamış.';
+  $('temaDurum').innerHTML = D.temaGizli ? '<b style="color:var(--warn)">Şu an gizli.</b>' : '';
+  $('temaSec').value = D.tema;
+  const kok = location.origin + location.pathname.replace(/yonetim\/?$/, '');
+  $('baglantilar').innerHTML = [['Vitrin (herkese açık)', ''], ['Takım paneli', 'takim'], ['Mentör paneli', 'mentor'], ['Jüri paneli', 'juri']].map(([a, p]) =>
+    `<div class="arac"><b style="min-width:180px">${a}</b><code style="flex:1">${esc(kok + p)}</code><button class="btn ghost sm" type="button" data-kopya="${esc(kok + p)}">${ik('copy')} Kopyala</button></div>`).join('');
+}
+document.querySelectorAll('[data-bayrak]').forEach(c => c.onchange = () => islem('PUT', 'bayraklar', { [c.dataset.bayrak]: c.checked }, 'Kaydedildi').catch(() => {}));
+$('temaSec').onchange = e => islem('PUT', 'bayraklar', { tema: e.target.value }, 'Tema değiştirildi').catch(() => {});
+document.addEventListener('click', e => {
+  const k = e.target.closest('[data-kopya]');
+  if (k) navigator.clipboard.writeText(k.dataset.kopya).then(() => bildir('Kopyalandı'));
+});
+
+// ---- Takımlar ----
+function takimCiz() {
+  const q = $('tAra').value.trim().toLocaleLowerCase('tr'), f = $('tFiltre').value;
+  const l = D.teams.filter(t => (!q || [t.ad, t.id, t.baslik, t.il, t.okul, t.danisman].join(' ').toLocaleLowerCase('tr').includes(q)) &&
+    (!f || (f === 'hazir' && t.baslik && t.kapak && (t.oyun || t.indir)) || (f === 'eksik' && !t.oyun && !t.indir) || (f === 'bos' && !t.guncelleme) || (f === 'gizli' && !t.yayinda)));
+  const d = (v, ad, t) => `<svg class="ik ${v ? 'var' : ''}" aria-label="${t}"><title>${t}</title><use href="ikonlar.svg#${ad}"/></svg>`;
+  $('tTablo').innerHTML = l.length ? l.map(t => `<tr>
+    <td>${t.kapak ? `<img class="kucuk-kapak" src="${dosya(t.id, t.kapak)}" alt="">` : '<span class="kucuk-kapak"></span>'}</td>
+    <td><b>${esc(t.ad)}</b><small>${esc(t.id)}${t.baslik ? ' · ' + esc(t.baslik) : ''}${t.oturum ? ' · çevrimiçi' : ''}</small></td>
+    <td>${esc(t.il)}<small>${esc(t.okul)}${t.danisman ? ' · ' + esc(t.danisman) : ''}</small>${t.mentorler.length ? `<small>${ik('graduation-cap')} ${esc(t.mentorler.map(m => D.mentors.find(x => x.id === m)?.ad || m).join(', '))}</small>` : ''}</td>
+    <td><span class="durum-ik">${d(t.baslik, 'pencil', 'Oyun adı')}${d(t.kapak, 'image', 'Kapak')}${d(t.oyun, 'gamepad-2', 'Web sürümü')}${d(t.indir, 'download', 'İndirme dosyası')}${d(t.video, 'youtube', 'Video')}${d(t.uye, 'users', 'Ekip')}</span></td>
+    <td><label class="anahtar"><input type="checkbox" data-yayin="${esc(t.id)}" ${t.yayinda ? 'checked' : ''}><span class="sr">Vitrinde</span></label></td>
+    <td>${t.guncelleme ? EJ.zaman(t.guncelleme) : '<small>Düzenlenmedi</small>'}</td>
+    <td><div class="islem">
+      <a class="ikbtn" href="oyun/${encodeURIComponent(t.id)}" target="_blank" title="Sayfayı görüntüle">${ik('eye')}</a>
+      <a class="ikbtn" href="takim?takim=${encodeURIComponent(t.id)}" title="Oyun sayfasını düzenle">${ik('pencil')}</a>
+      <button class="ikbtn" type="button" data-duzen="${esc(t.id)}" title="Takım bilgileri">${ik('users')}</button>
+      <button class="ikbtn" type="button" data-sifre="${esc(t.id)}" title="Şifre sıfırla">${ik('key-round')}</button>
+      <button class="ikbtn" type="button" data-sil="${esc(t.id)}" title="Takımı sil">${ik('trash-2')}</button>
+    </div></td></tr>`).join('') : `<tr><td colspan="7" class="bos">${D.teams.length ? 'Eşleşen takım yok' : 'Henüz takım yok. "Takım ekle" ya da "Toplu ekle" ile başlayın.'}</td></tr>`;
+}
+$('tAra').oninput = takimCiz;
+$('tFiltre').onchange = takimCiz;
+
+const takimVeri = t => ({ id: t.id, ad: t.ad, il: t.il, okul: t.okul, danisman: t.danisman, yayinda: t.yayinda, rozet: t.rozet });
+$('tTablo').addEventListener('change', e => {
+  const c = e.target.closest('[data-yayin]'); if (!c) return;
+  const t = D.teams.find(x => x.id === c.dataset.yayin);
+  islem('PUT', 'takim', { ...takimVeri(t), yayinda: c.checked }, c.checked ? 'Vitrine eklendi' : 'Vitrinden kaldırıldı').catch(() => {});
+});
+$('tTablo').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.duzen) takimPenceresi(D.teams.find(x => x.id === b.dataset.duzen));
+  if (b.dataset.sifre) {
+    const t = D.teams.find(x => x.id === b.dataset.sifre);
+    if (!confirm(`${t.ad} takımının şifresi sıfırlanacak; eski şifre çalışmayacak. Devam edilsin mi?`)) return;
+    const d = await islem('POST', 'takim-sifre', { id: t.id }).catch(() => null);
+    if (d) sifreleriGoster(d.yeni);
+  }
+  if (b.dataset.sil) {
+    const t = D.teams.find(x => x.id === b.dataset.sil);
+    const yaz = prompt(`${t.ad} takımı, oyun sayfası, yüklediği tüm dosyalar ve aldığı puanlar kalıcı olarak silinecek.\nOnaylamak için takımın kullanıcı adını yazın: ${t.id}`);
+    if (yaz === null) return;
+    if (yaz.trim() !== t.id) return bildir('Kullanıcı adı eşleşmedi, silinmedi', 'h');
+    islem('DELETE', 'takim?id=' + encodeURIComponent(t.id), undefined, 'Takım silindi').catch(() => {});
+  }
+});
+
+let duzenlenen = null;
+function takimPenceresi(t) {
+  duzenlenen = t || null;
+  $('tpBaslik').textContent = t ? 'Takım bilgileri' : 'Takım ekle';
+  $('tpAd').value = t?.ad || ''; $('tpKul').value = t?.id || ''; $('tpIl').value = t?.il || '';
+  $('tpOkul').value = t?.okul || ''; $('tpDan').value = t?.danisman || ''; $('tpRozet').value = t?.rozet || '';
+  $('tpYayinda').checked = t ? t.yayinda : true;
+  $('tpDuzenAlan').classList.toggle('hidden', !t);
+  $('tpHata').textContent = '';
+  $('takimPencere').classList.remove('hidden'); $('tpAd').focus();
+}
+$('tEkle').onclick = () => takimPenceresi(null);
+$('takimForm').onsubmit = async e => {
+  e.preventDefault(); $('tpHata').textContent = '';
+  const v = { ad: $('tpAd').value, il: $('tpIl').value, okul: $('tpOkul').value, danisman: $('tpDan').value };
+  try {
+    if (duzenlenen) {
+      const d = await A('PUT', 'takim', { ...v, id: duzenlenen.id, kullanici: $('tpKul').value, rozet: $('tpRozet').value, yayinda: $('tpYayinda').checked });
+      await yenile(d); bildir('Kaydedildi', 'o');
+    } else {
+      const d = await A('POST', 'takim', { ...v, kullanici: $('tpKul').value });
+      await yenile(d); sifreleriGoster(d.yeni);
+    }
+    $('takimPencere').classList.add('hidden');
+  } catch (err) { $('tpHata').textContent = err.message; }
+};
+$('tToplu').onclick = () => { $('topluHata').textContent = ''; $('topluPencere').classList.remove('hidden'); $('topluMetin').focus(); };
+$('topluForm').onsubmit = async e => {
+  e.preventDefault(); $('topluHata').textContent = '';
+  try {
+    const d = await A('POST', 'takimlar', { metin: $('topluMetin').value });
+    await yenile(d);
+    $('topluPencere').classList.add('hidden'); $('topluMetin').value = '';
+    sifreleriGoster(d.yeni);
+  } catch (err) { $('topluHata').textContent = err.message; }
+};
+
+let uretilenTur = 'takim';
+function sifreleriGoster(liste, tur = 'takim') {
+  uretilen = liste; uretilenTur = tur;
+  $('sifreBas').textContent = tur === 'mentor' ? 'Mentör' : 'Takım';
+  $('sifreTablo').innerHTML = liste.map(t => `<tr><td>${esc(t.ad)}</td><td>${esc(t.id)}</td><td><b>${esc(t.sifre)}</b></td></tr>`).join('');
+  $('sifrePencere').classList.remove('hidden');
+}
+$('sifreKopyala').onclick = () => navigator.clipboard.writeText(uretilen.map(t => `${t.ad}\t${t.id}\t${t.sifre}`).join('\n')).then(() => bildir('Kopyalandı'));
+$('sifreIndir').onclick = () => {
+  const mentor = uretilenTur === 'mentor';
+  const adres = location.origin + location.pathname.replace(/yonetim\/?$/, '') + (mentor ? 'mentor' : 'takim');
+  const h = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = '﻿' + (mentor
+    ? ['Mentör;Uzmanlık;Kullanıcı adı;Şifre;Giriş adresi', ...uretilen.map(t => [t.ad, t.alan, t.id, t.sifre, adres].map(h).join(';'))]
+    : ['Takım;İl;Okul;Kullanıcı adı;Şifre;Giriş adresi', ...uretilen.map(t => [t.ad, t.il, t.okul, t.id, t.sifre, adres].map(h).join(';'))]).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `egitijam-${mentor ? 'mentor' : 'takim'}-sifreleri-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+};
+document.querySelectorAll('.pencere [data-kapat]').forEach(b => b.onclick = () => {
+  const p = b.closest('.pencere');
+  if (p.id === 'sifrePencere' && !confirm('Şifreler bir daha gösterilmeyecek. Listeyi indirdiniz ya da kopyaladınız mı?')) return;
+  p.classList.add('hidden');
+});
+
+// ---- Mentörler ----
+function mentorCiz() {
+  const q = $('mAra').value.trim().toLocaleLowerCase('tr');
+  const ad = id => D.teams.find(t => t.id === id)?.ad || id;
+  const l = D.mentors.filter(m => !q || [m.ad, m.id, m.alan].join(' ').toLocaleLowerCase('tr').includes(q));
+  $('mTablo').innerHTML = l.length ? l.map(m => `<tr>
+    <td><b>${esc(m.ad)}</b><small>${esc(m.id)}</small></td>
+    <td>${esc(m.alan) || '<small>—</small>'}</td>
+    <td>${m.takimlar.length ? `<b>${m.takimlar.length}</b><small>${esc(m.takimlar.slice(0, 4).map(ad).join(', '))}${m.takimlar.length > 4 ? ' …' : ''}</small>` : '<small>Atanmadı</small>'}</td>
+    <td>${m.oturum ? `<button class="btn ghost sm" type="button" data-moturum="${esc(m.id)}" title="Oturumunu kapat">${ik('log-out')} ${m.oturum}</button>` : '<small>—</small>'}</td>
+    <td><div class="islem">
+      <button class="ikbtn" type="button" data-mduzen="${esc(m.id)}" title="Bilgiler ve takım ataması">${ik('pencil')}</button>
+      <button class="ikbtn" type="button" data-msifre="${esc(m.id)}" title="Şifre sıfırla">${ik('key-round')}</button>
+      <button class="ikbtn" type="button" data-msil="${esc(m.id)}" title="Mentörü sil">${ik('trash-2')}</button>
+    </div></td></tr>`).join('') : `<tr><td colspan="5" class="bos">${D.mentors.length ? 'Eşleşen mentör yok' : 'Henüz mentör yok. "Mentör ekle" ya da "Toplu ekle" ile başlayın.'}</td></tr>`;
+}
+$('mAra').oninput = mentorCiz;
+let mDuzen = null, mSecili = new Set();
+function mentorPenceresi(m) {
+  mDuzen = m || null;
+  mSecili = new Set(m ? m.takimlar : []);
+  $('mpBaslik').textContent = m ? 'Mentör bilgileri' : 'Mentör ekle';
+  $('mpAd').value = m?.ad || ''; $('mpAlan').value = m?.alan || ''; $('mpKul').value = '';
+  $('mpKulAlan').classList.toggle('hidden', !!m);
+  $('mpAra').value = ''; $('mpHata').textContent = '';
+  mpTakimCiz();
+  $('mentorPencere').classList.remove('hidden'); $('mpAd').focus();
+}
+function mpTakimCiz() {
+  const q = $('mpAra').value.trim().toLocaleLowerCase('tr');
+  const baskasi = {};
+  for (const m of D.mentors) if (m.id !== mDuzen?.id) for (const t of m.takimlar) (baskasi[t] ||= []).push(m.ad);
+  const l = D.teams.filter(t => !q || [t.ad, t.id, t.il, t.okul, t.danisman].join(' ').toLocaleLowerCase('tr').includes(q));
+  $('mpTakimlar').innerHTML = l.length ? l.map(t => `<label style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer">
+    <input type="checkbox" data-mt="${esc(t.id)}" ${mSecili.has(t.id) ? 'checked' : ''}>
+    <span style="flex:1;min-width:0"><b>${esc(t.ad)}</b> <small style="color:var(--muted)">${esc([t.il, t.okul].filter(Boolean).join(' · '))}</small>
+    ${baskasi[t.id] ? `<br><small style="color:var(--muted)">Mentörü: ${esc(baskasi[t.id].join(', '))}</small>` : ''}</span></label>`).join('')
+    : `<p class="bos" style="padding:16px">${D.teams.length ? 'Eşleşen takım yok' : 'Henüz takım yok'}</p>`;
+  $('mpSay').textContent = `(${mSecili.size} seçili)`;
+}
+$('mpAra').oninput = mpTakimCiz;
+$('mpTakimlar').onchange = e => { const c = e.target.closest('[data-mt]'); if (!c) return; c.checked ? mSecili.add(c.dataset.mt) : mSecili.delete(c.dataset.mt); $('mpSay').textContent = `(${mSecili.size} seçili)`; };
+$('mEkle').onclick = () => mentorPenceresi(null);
+$('mentorForm').onsubmit = async e => {
+  e.preventDefault(); $('mpHata').textContent = '';
+  const v = { ad: $('mpAd').value, alan: $('mpAlan').value, takimlar: [...mSecili] };
+  try {
+    if (mDuzen) { await yenile(await A('PUT', 'mentor', { ...v, id: mDuzen.id })); bildir('Kaydedildi', 'o'); }
+    else { const d = await A('POST', 'mentor', { ...v, kullanici: $('mpKul').value }); await yenile(d); sifreleriGoster(d.yeni, 'mentor'); }
+    $('mentorPencere').classList.add('hidden');
+  } catch (err) { $('mpHata').textContent = err.message; }
+};
+$('mToplu').onclick = () => { $('mTopluHata').textContent = ''; $('mTopluPencere').classList.remove('hidden'); $('mTopluMetin').focus(); };
+$('mTopluForm').onsubmit = async e => {
+  e.preventDefault(); $('mTopluHata').textContent = '';
+  try {
+    const d = await A('POST', 'mentorler', { metin: $('mTopluMetin').value });
+    await yenile(d);
+    $('mTopluPencere').classList.add('hidden'); $('mTopluMetin').value = '';
+    sifreleriGoster(d.yeni, 'mentor');
+  } catch (err) { $('mTopluHata').textContent = err.message; }
+};
+$('mTablo').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const m = D.mentors.find(x => x.id === (b.dataset.mduzen || b.dataset.msifre || b.dataset.msil || b.dataset.moturum));
+  if (!m) return;
+  if (b.dataset.mduzen) mentorPenceresi(m);
+  if (b.dataset.moturum) islem('DELETE', 'oturum?kim=' + encodeURIComponent('m:' + m.id), undefined, 'Oturum kapatıldı').catch(() => {});
+  if (b.dataset.msifre) {
+    if (!confirm(`${m.ad} için yeni şifre üretilecek; eski şifre çalışmayacak. Devam edilsin mi?`)) return;
+    const d = await islem('POST', 'mentor-sifre', { id: m.id }).catch(() => null);
+    if (d) sifreleriGoster(d.yeni, 'mentor');
+  }
+  if (b.dataset.msil) {
+    if (!confirm(`${m.ad} silinsin mi? Takım atamaları kaldırılır; yazdığı mesajlar kanallarda kalır.`)) return;
+    islem('DELETE', 'mentor?id=' + encodeURIComponent(m.id), undefined, 'Mentör silindi').catch(() => {});
+  }
+});
+
+// ---- Sonuçlar ----
+const sayi = EJ.sayi;
+// Bir sıralama tablosu. tur: 'on' | 'final'; finalKutu: ön elemede "Final" seçim sütunu
+function siralamaTablosu(R, tur, finalKutu) {
+  const C = D.criteria, J = D.juries, votes = tur === 'final' ? D.finalVotes : D.votes;
+  const tot = D.maxTotals.ana + (D.maxTotals.ek ? ` + ${D.maxTotals.ek}` : '');
+  const sutun = C.length + 5 + (finalKutu ? 1 : 0);
+  let sira = 0;
+  const govde = R.length ? R.map(r => {
+    if (r.n) sira++;
+    const anahtar = tur + ':' + r.id;
+    const satir = `<tr data-ac="${esc(anahtar)}" style="cursor:pointer">
+      <td class="n"><span class="sira-no">${r.n ? sira : ''}</span></td>
+      <td><b>${esc(r.takim)}</b><small>${esc(r.baslik || '—')}${r.il ? ' · ' + esc(r.il) : ''}${r.yayinda ? '' : ' · vitrinde değil'}</small></td>
+      <td class="n"><b style="font-size:16px">${r.avg === null ? '–' : sayi(r.avg)}</b></td>
+      <td class="n">${r.n}/${r.beklenen}</td>
+      ${r.critAvg.map(v => `<td class="n">${v === null ? '–' : sayi(v)}</td>`).join('')}
+      ${finalKutu ? `<td><label class="anahtar"><input type="checkbox" data-finalist="${esc(r.id)}" ${r.finalist ? 'checked' : ''}><span class="sr">Finalist</span></label></td>` : ''}
+      <td><input class="rozet" type="text" maxlength="60" value="${esc(r.rozet)}" data-rozet="${esc(r.id)}" placeholder="—" aria-label="Rozet"></td></tr>`;
+    if (acikAyrinti !== anahtar) return satir;
+    const bekl = j => !D.odalar.length || tur === 'final' || j.oda === r.oda;
+    const V = J.map(j => [j, (votes[j.id] || {})[r.id]]).filter(([j, v]) => v || bekl(j));
+    return satir + `<tr class="ayrinti"><td></td><td colspan="${sutun - 1}"><table>
+      <thead><tr><th>Jüri</th>${C.map(c => `<th class="n">${esc(c.short || c.name)}</th>`).join('')}<th class="n">Toplam</th><th>Not</th></tr></thead>
+      <tbody>${V.map(([j, v]) => `<tr><td>${esc(j.name)}${bekl(j) ? '' : ' <small>(başka oda; sıralamaya girmez)</small>'}</td>${v ? v.scores.map(s => `<td class="n">${s}</td>`).join('') + `<td class="n"><b>${v.total}</b></td><td>${esc(v.note) || '<small>—</small>'}</td>`
+        : `<td colspan="${C.length + 2}"><small>Puanlamadı</small></td>`}</tr>`).join('')}</tbody></table></td></tr>`;
+  }).join('') : `<tr><td colspan="${sutun}" class="bos">${tur === 'final' ? 'Henüz finalist yok' : 'Takım yok'}</td></tr>`;
+  return `<div class="tablo-kap"><table>
+    <thead><tr><th class="n">#</th><th>Takım / oyun</th><th class="n">Ortalama<br><small style="font-weight:400">/ ${tot}</small></th><th class="n">Jüri</th>
+    ${C.map(c => `<th class="n" title="${esc(c.name)}">${esc(c.short || c.name)}</th>`).join('')}${finalKutu ? '<th>Final</th>' : ''}<th>Rozet</th></tr></thead>
+    <tbody>${govde}</tbody></table></div>`;
+}
+function sonucCiz() {
+  const R = D.ranking.filter(r => r.yayinda || r.n);
+  const oy = R.reduce((a, r) => a + r.n, 0), bek = R.reduce((a, r) => a + r.beklenen, 0);
+  if (!D.odalar.length) {
+    $('oyIlerleme').textContent = `${oy} / ${bek} puan verildi`;
+    $('sonucAlan').innerHTML = siralamaTablosu(R, 'on', false);
+    return;
+  }
+  const FR = D.finalRanking, foy = FR.reduce((a, r) => a + r.n, 0), fbek = FR.reduce((a, r) => a + r.beklenen, 0);
+  $('oyIlerleme').textContent = `Ön eleme: ${oy} / ${bek} · Final: ${foy} / ${fbek} puan · Şu anki aşama: ${D.asama === 'final' ? 'Final' : 'Ön eleme'}`;
+  const odaBas = (ad, l) => `<div class="sonuc-bas"><h3>${esc(ad)}</h3><span>${l.length} takım · ${l.filter(r => r.finalist).length} finalist</span></div>`;
+  let h = `<div class="sonuc-bas"><h3>${ik('trophy')} Final</h3><span>${FR.length} finalist, tüm jüriler puanlar. Dereceleri (rozet) buradan verin.</span></div>` + siralamaTablosu(FR, 'final', false);
+  for (const o of D.odalar) { const l = R.filter(r => r.oda === o.id); h += odaBas(`Ön eleme · ${o.ad}`, l) + siralamaTablosu(l, 'on', true); }
+  const odasiz = R.filter(r => !r.oda);
+  if (odasiz.length) h += odaBas('Odası olmayan takımlar', odasiz) + siralamaTablosu(odasiz, 'on', true);
+  $('sonucAlan').innerHTML = h;
+}
+$('sonucAlan').addEventListener('click', e => {
+  if (e.target.closest('input, label')) return;
+  const tr = e.target.closest('tr[data-ac]'); if (!tr) return;
+  acikAyrinti = acikAyrinti === tr.dataset.ac ? null : tr.dataset.ac;
+  sonucCiz();
+});
+$('sonucAlan').addEventListener('change', e => {
+  const f = e.target.closest('[data-finalist]');
+  if (f) {
+    const l = new Set(D.finalistler);
+    f.checked ? l.add(f.dataset.finalist) : l.delete(f.dataset.finalist);
+    return islem('PUT', 'finalistler', { list: [...l] }, f.checked ? 'Finale eklendi' : 'Finalden çıkarıldı').catch(() => {});
+  }
+  const i = e.target.closest('[data-rozet]'); if (!i) return;
+  const t = D.teams.find(x => x.id === i.dataset.rozet);
+  islem('PUT', 'takim', { ...takimVeri(t), rozet: i.value }, 'Rozet kaydedildi').catch(() => {});
+});
+
+// ---- Jüri odaları ----
+function odaSatiri(o = { id: '', ad: '' }) {
+  const d = document.createElement('div');
+  d.className = 'arac'; d.style.marginTop = '8px'; d.dataset.id = o.id;
+  d.innerHTML = `<input type="text" maxlength="40" placeholder="Oda adı (ör. Oda 1, Mavi Salon)" aria-label="Oda adı" style="flex:1 1 240px;width:auto">
+    <button class="ikbtn" type="button" title="Odayı sil">${ik('trash-2')}</button>`;
+  d.querySelector('input').value = o.ad;
+  d.querySelector('button').onclick = () => d.remove();
+  $('oListe').appendChild(d);
+}
+function odaCiz() {
+  $('oListe').innerHTML = '';
+  D.odalar.forEach(odaSatiri);
+  if (!D.odalar.length) $('oListe').innerHTML = '<p class="yard" style="margin:0">Henüz oda yok: tüm jüriler tüm takımları puanlıyor.</p>';
+  const var_ = D.odalar.length > 0;
+  $('oAsamaKart').classList.toggle('hidden', !var_);
+  $('oDagilimKart').classList.toggle('hidden', !var_);
+  if (!var_) return;
+  document.querySelectorAll('#oAsama button').forEach(b => b.classList.toggle('secili', b.dataset.asama === D.asama));
+  if (document.activeElement !== $('oFinalSayi')) $('oFinalSayi').value = D.finalSayi;
+  $('oFinalistler').innerHTML = D.finalistler.length ? '<b style="font-size:14px;margin-right:4px">Finalistler:</b>' + D.finalistler.map(id => {
+    const t = D.teams.find(x => x.id === id);
+    return `<span class="etiket k">${esc(t ? t.ad : id)}${t && t.oda ? ` · ${esc(D.odalar.find(o => o.id === t.oda)?.ad || '')}` : ''}</span>`;
+  }).join('') : '<span class="yard" style="margin:0">Henüz finalist yok.</span>';
+
+  const q = $('oAra').value.trim().toLocaleLowerCase('tr'), uy = s => !q || s.toLocaleLowerCase('tr').includes(q);
+  const sec = (veri, cur) => `<select ${veri} aria-label="Oda"><option value="">Odasız</option>${D.odalar.map(o => `<option value="${esc(o.id)}" ${o.id === cur ? 'selected' : ''}>${esc(o.ad)}</option>`).join('')}</select>`;
+  const kutu = (oda, ad, cls) => {
+    const J = D.juries.filter(j => (j.oda || '') === oda), T = D.teams.filter(t => (t.oda || '') === oda && (oda || t.yayinda));
+    return `<div class="oda ${cls}"><header><b>${esc(ad)}</b><small>${J.length} jüri · ${T.length} takım</small></header>
+      <h4>Jüriler</h4><ul>${J.filter(j => uy(j.name)).map(j => `<li><span title="${esc(j.name)}">${esc(j.name)}</span>${sec(`data-ojuri="${esc(j.id)}"`, j.oda || '')}</li>`).join('') || '<li><small style="color:var(--muted)">—</small></li>'}</ul>
+      <h4>Takımlar</h4><ul>${T.filter(t => uy(`${t.ad} ${t.il} ${t.okul} ${t.baslik}`)).map(t => `<li><span title="${esc([t.ad, t.baslik, t.il, t.okul].filter(Boolean).join(' · '))}">${esc(t.ad)}${t.il ? ` <small style="color:var(--muted)">${esc(t.il)}</small>` : ''}</span>${sec(`data-otakim="${esc(t.id)}"`, t.oda || '')}</li>`).join('') || '<li><small style="color:var(--muted)">—</small></li>'}</ul></div>`;
+  };
+  $('oIzgara').innerHTML = D.odalar.map(o => kutu(o.id, o.ad, '')).join('') + kutu('', 'Odasız (yayındaki takımlar)', 'odasiz');
+}
+$('oEkle').onclick = () => { if (!$('oListe').querySelector('.arac')) $('oListe').innerHTML = ''; odaSatiri({ id: '', ad: `Oda ${$('oListe').children.length + 1}` }); $('oListe').lastElementChild.querySelector('input').select(); };
+$('oKaydet').onclick = () => {
+  const list = [...$('oListe').querySelectorAll('.arac')].map(d => ({ id: d.dataset.id, ad: d.querySelector('input').value }));
+  const silinen = D.odalar.filter(o => !list.some(x => x.id === o.id));
+  if (silinen.length && !confirm(`${silinen.map(o => o.ad).join(', ')} silinecek; jürileri ve takımları odasız kalacak. Devam edilsin mi?`)) return;
+  islem('PUT', 'odalar', { list }, 'Odalar kaydedildi').catch(() => {});
+};
+$('oAra').oninput = odaCiz;
+$('oIzgara').addEventListener('change', e => {
+  const s = e.target.closest('select'); if (!s) return;
+  const b = s.dataset.ojuri ? { juriler: { [s.dataset.ojuri]: s.value } } : { takimlar: { [s.dataset.otakim]: s.value } };
+  islem('PUT', 'oda-ata', b, 'Taşındı').catch(() => {});
+});
+$('oDagitBos').onclick = () => islem('POST', 'oda-dagit', { hepsi: false }).then(d => bildir(`${d.dagitilan} takım odalara dağıtıldı`, 'o')).catch(() => {});
+$('oDagitHepsi').onclick = () => confirm('Tüm takımların odası silinip yeniden dağıtılacak. Verilmiş ön eleme puanları silinmez, ancak takım başka odaya geçerse eski odanın jüri puanları sıralamaya girmez. Devam edilsin mi?')
+  && islem('POST', 'oda-dagit', { hepsi: true }).then(d => bildir(`${d.dagitilan} takım yeniden dağıtıldı`, 'o')).catch(() => {});
+$('oAsama').onclick = e => {
+  const b = e.target.closest('[data-asama]'); if (!b || b.dataset.asama === D.asama) return;
+  const msj = b.dataset.asama === 'final' ? `Final aşamasına geçilsin mi? Jüriler artık yalnızca ${D.finalistler.length} finalisti puanlar.` : 'Ön eleme aşamasına dönülsün mü? Jüriler yine kendi odalarını puanlar.';
+  if (confirm(msj)) islem('PUT', 'bayraklar', { asama: b.dataset.asama }, 'Aşama değiştirildi').catch(() => {});
+};
+$('oFinalSec').onclick = () => {
+  const n = +$('oFinalSayi').value;
+  if (D.finalistler.length && !confirm('Mevcut finalist listesi ön eleme sıralamasına göre yeniden oluşturulacak. Devam edilsin mi?')) return;
+  islem('POST', 'finalist-sec', { sayi: n }).then(d => bildir(`${d.secilen} finalist seçildi`, 'o')).catch(() => {});
+};
+async function indir(p, ad) {
+  try {
+    const r = await fetch('api/admin/' + p, { headers: { Authorization: 'Bearer ' + EJ.jeton('yonetim') } });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'İndirilemedi');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await r.blob());
+    a.download = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || ad;
+    a.click(); URL.revokeObjectURL(a.href);
+  } catch (e) { bildir(e.message, 'h'); }
+}
+$('xlsx').onclick = () => indir('puanlar.xlsx', 'egitijam-puanlar.xlsx');
+
+// ---- Jüriler ----
+function juriSatiri(j = {}) {
+  const d = document.createElement('div');
+  d.className = 'satir-ed j';
+  d.dataset.eski = j.id || '';
+  d.innerHTML = `<input type="text" maxlength="80" placeholder="Prof. Dr. Ad SOYAD" aria-label="Ad soyad">
+    <input type="text" maxlength="40" placeholder="otomatik" aria-label="Kullanıcı adı" autocapitalize="none">
+    ${j.id ? `<button class="btn ghost sm" type="button" data-jsifre title="Bu jüriye özel şifre">${ik('key-round')} ${j.ozelSifre ? 'Özel şifre' : 'Ortak şifre'}</button>` : '<span></span>'}
+    ${j.id ? `<button class="btn ghost sm" type="button" data-joturum ${j.oturum ? '' : 'disabled'} title="Oturumunu kapat">${ik('log-out')} ${j.oturum}</button>` : '<span></span>'}
+    <button class="ikbtn" type="button" data-jsil title="Listeden çıkar">${ik('trash-2')}</button>`;
+  const [ad, kul] = d.querySelectorAll('input');
+  ad.value = j.name || ''; kul.value = j.id || '';
+  d.querySelector('[data-jsil]').onclick = () => d.remove();
+  const s = d.querySelector('[data-jsifre]');
+  if (s) s.onclick = () => {
+    const p = prompt(`${j.name} için özel şifre (en az 4 karakter).\nBoş bırakırsanız özel şifre kaldırılır ve ortak şifre geçerli olur.`);
+    if (p === null) return;
+    islem('PUT', 'sifre', { tur: 'juri', juri: j.id, sifre: p }, p ? 'Özel şifre belirlendi' : 'Özel şifre kaldırıldı').catch(() => {});
+  };
+  const o = d.querySelector('[data-joturum]');
+  if (o) o.onclick = () => islem('DELETE', 'oturum?kim=' + encodeURIComponent('j:' + j.id), undefined, 'Oturum kapatıldı').catch(() => {});
+  $('jListe').appendChild(d);
+}
+function juriCiz() {
+  $('jListe').innerHTML = '';
+  D.juries.forEach(juriSatiri);
+  if (!D.juries.length) juriSatiri();
+  $('ortakDurum').textContent = D.sifre.ortak === 'panel' ? 'Ortak şifre panelden belirlendi. Özel şifresi olmayan jüriler bununla girer.'
+    : D.sifre.ortak === 'env' ? 'Ortak şifre .env dosyasındaki JURI_SIFRE değeri.' : 'Ortak şifre yok: özel şifresi olmayan jüriler giriş yapamaz.';
+}
+$('jEkle').onclick = () => { juriSatiri(); $('jListe').lastElementChild.querySelector('input').focus(); };
+$('jKaydet').onclick = () => {
+  const list = [...$('jListe').children].map(d => { const [a, k] = d.querySelectorAll('input'); return { name: a.value, id: k.value, eski: d.dataset.eski }; }).filter(j => j.name.trim());
+  const cikan = D.juries.filter(j => !list.some(x => x.eski === j.id));
+  const puanli = cikan.filter(j => Object.keys(D.votes[j.id] || {}).length);
+  if (puanli.length && !confirm(`${puanli.map(j => j.name).join(', ')} listeden çıkarılıyor ve verdikleri puanlar silinecek. Devam edilsin mi?`)) return;
+  islem('PUT', 'juriler', { list }, 'Jüri listesi kaydedildi').catch(() => {});
+};
+$('ortakKaydet').onclick = () => islem('PUT', 'sifre', { tur: 'ortak', sifre: $('ortakSifre').value }, 'Ortak şifre belirlendi').then(() => $('ortakSifre').value = '').catch(() => {});
+
+// ---- Kriterler ----
+function kriterSatiri(c = { name: '', short: '', max: 10, ek: false }) {
+  const d = document.createElement('div');
+  d.className = 'satir-ed k';
+  d.innerHTML = `<input type="text" maxlength="120" aria-label="Kriter adı"><input type="text" maxlength="24" aria-label="Kısa ad">
+    <input type="number" min="1" max="1000" aria-label="Azami puan"><label class="anahtar"><input type="checkbox" aria-label="Ek puan"></label>
+    <button class="ikbtn" type="button" title="Çıkar">${ik('trash-2')}</button>`;
+  const [n, s, m, e] = d.querySelectorAll('input');
+  n.value = c.name; s.value = c.short; m.value = c.max; e.checked = c.ek;
+  d.querySelector('button').onclick = () => { d.remove(); kriterToplam(); };
+  d.oninput = kriterToplam;
+  $('kListe').appendChild(d);
+}
+const kriterVerisi = () => [...$('kListe').children].map(d => { const [n, s, m, e] = d.querySelectorAll('input'); return { name: n.value, short: s.value, max: +m.value, ek: e.checked }; });
+function kriterToplam() {
+  const k = kriterVerisi(), a = k.filter(x => !x.ek).reduce((t, x) => t + (x.max || 0), 0), e = k.filter(x => x.ek).reduce((t, x) => t + (x.max || 0), 0);
+  $('kToplam').textContent = `Toplam: ${a}${e ? ` + ${e} ek` : ''} puan`;
+}
+function kriterCiz() { $('kListe').innerHTML = ''; D.criteria.forEach(kriterSatiri); kriterToplam(); }
+$('kEkle').onclick = () => { kriterSatiri(); kriterToplam(); };
+$('kKaydet').onclick = () => islem('PUT', 'kriterler', { list: kriterVerisi() }, 'Kriterler kaydedildi').catch(() => {});
+
+// ---- Etkinlik ----
+const EV = { eAd: 'ad', eDonem: 'donem', eKurum: 'kurum', eAlt: 'altBaslik', eTema: 'tema', eTarih: 'tarih', eAciklama: 'aciklama', eKurallar: 'kurallar' };
+// datetime-local <-> ms (tarayıcının saat dilimiyle)
+const yerelZaman = ms => ms ? new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
+const zamanMs = v => v ? new Date(v).getTime() : null;
+function etkinlikCiz() {
+  for (const [id, k] of Object.entries(EV)) $(id).value = D.event[k] || '';
+  $('eBas').value = yerelZaman(D.event.baslangic); $('eBit').value = yerelZaman(D.event.bitis);
+}
+$('eForm').onsubmit = e => {
+  e.preventDefault();
+  islem('PUT', 'etkinlik', { ...Object.fromEntries(Object.entries(EV).map(([id, k]) => [k, $(id).value])), baslangic: zamanMs($('eBas').value), bitis: zamanMs($('eBit').value) }, 'Etkinlik bilgileri kaydedildi').catch(() => {});
+};
+
+// ---- Güvenlik & veri ----
+function guvenlikCiz() {
+  $('adminDurum').textContent = D.sifre.admin === 'panel' ? 'Yönetici şifresi panelden belirlendi.' : 'Yönetici şifresi .env dosyasındaki ADMIN_SIFRE değeri. Buradan değiştirirseniz panelden belirlenen geçerli olur.';
+}
+$('adminKaydet').onclick = () => islem('PUT', 'sifre', { tur: 'admin', sifre: $('adminSifre').value }, 'Yönetici şifresi değiştirildi').then(() => $('adminSifre').value = '').catch(() => {});
+$('oturumKapat').onclick = () => confirm('Tüm takım, mentör ve jüri oturumları kapatılsın mı?') && islem('DELETE', 'oturum', undefined, 'Oturumlar kapatıldı').catch(() => {});
+$('yedekAl').onclick = () => indir('yedek', 'egitijam-yedek.json');
+$('yedekYukle').onclick = () => $('yedekDosya').click();
+$('yedekDosya').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  if (!confirm('Mevcut ayarlar, takımlar ve oylar silinip yedektekiyle değiştirilecek. Devam edilsin mi?')) return;
+  let b;
+  try { b = JSON.parse(await f.text()); } catch { return bildir('Dosya okunamadı', 'h'); }
+  const d = await islem('POST', 'geri-yukle', b, 'Yedek geri yüklendi').catch(() => null);
+  if (d && d.atlanan) bildir(`Yedek yüklendi; ${d.atlanan} oy uyumsuz olduğu için atlandı`, 'h');
+};
+$('sifirla').onclick = () => {
+  if ($('sifirlaOnay').value !== 'SIFIRLA') return bildir('Onay kutusuna SIFIRLA yazın', 'h');
+  islem('POST', 'sifirla', { onay: 'SIFIRLA' }, 'Tüm oylar silindi').then(() => $('sifirlaOnay').value = '').catch(() => {});
+};
+
+// ---- Giriş ----
+$('girisForm').onsubmit = async e => {
+  e.preventDefault(); $('gHata').textContent = '';
+  try {
+    const d = await api('POST', 'api/admin/giris', { sifre: $('gSif').value });
+    EJ.jetonYaz('yonetim', d.token); $('gSif').value = '';
+    yenile();
+  } catch (err) { $('gHata').textContent = err.message; }
+};
+$('cikis').onclick = async () => {
+  try { await A('POST', 'cikis', {}); } catch {}
+  EJ.jetonYaz('yonetim', null); location.reload();
+};
+
+if (EJ.jeton('yonetim')) yenile(); else girisGoster();
+</script>
+</body>
+</html>

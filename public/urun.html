@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Sayfa /oyun/<id> adresinden açılır: göreli adresler bir üst klasöre göre çözülsün -->
+<base href="../">
+<title>EğitiJAM</title>
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="stylesheet" href="tema.css">
+<link rel="stylesheet" href="ortak.css">
+<script src="tema.js"></script>
+<style>
+  .serit-on { padding: 26px 0 30px; }
+  .serit-on .geri { color: var(--renk-vitrin-metin-yumusak); text-decoration: none; font-size: 14px; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
+  .serit-on .geri:hover { color: #fff; }
+  .serit-on h1 { margin: 12px 0 4px; font-size: clamp(28px, 5vw, 44px); line-height: 1.1; }
+  .serit-on .kim { color: var(--renk-vitrin-metin-yumusak); font-size: 16px; display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; }
+  .serit-on .kim b { color: #fff; }
+  .serit-on .kisa { margin: 10px 0 0; font-size: 17px; max-width: 760px; }
+  .serit-on .etiketler { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+  .serit-on .etiketler .etiket { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.3); }
+
+  .duzen { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; margin-top: 24px; align-items: start; }
+  @media (max-width: 900px) { .duzen { grid-template-columns: 1fr; } }
+  .duzen > div { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  section.kart { padding: 22px; }
+  section.kart > h2 { font-size: 18px; margin: 0 0 12px; color: var(--renk-baslik); display: flex; align-items: center; gap: 8px; }
+  .yazi p { margin: 0 0 12px; }
+  .yazi p:last-child { margin-bottom: 0; }
+
+  /* Oyun alanı */
+  .sahne { background: #111; border-radius: var(--yaricap-kart); overflow: hidden; position: relative; box-shadow: var(--golge-yuksek); }
+  .afis { position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center; cursor: pointer; border: 0; width: 100%; padding: 0;
+    background: radial-gradient(800px 400px at 80% -10%, var(--renk-vitrin-isik), var(--renk-vitrin) 50%, var(--renk-vitrin-koyu)); color: #fff; }
+  .afis img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.55) blur(1px); }
+  .afis .ortala { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .afis .dugme { width: 88px; height: 88px; border-radius: 50%; background: var(--renk-birincil); display: grid; place-items: center;
+    box-shadow: 0 0 0 10px rgba(255,255,255,.15), var(--golge-yuksek); transition: transform .15s; }
+  .afis:hover .dugme { transform: scale(1.07); }
+  .afis .dugme .ik { width: 38px; height: 38px; margin-left: 6px; fill: #fff; }
+  .afis .ortala b { font-family: var(--yazi-baslik); font-size: 22px; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
+  .afis .ortala small { font-size: 13px; opacity: .85; }
+  .oyun-cerceve { display: block; margin: 0 auto; border: 0; background: #000; max-width: 100%; }
+  .sahne-alt { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; background: #1c1c1e; color: #bbb; font-size: 13px; flex-wrap: wrap; }
+  .sahne-alt .btn { background: #2c2c2f; border-color: #3a3a3d; color: #eee; }
+  .sahne-alt .btn:hover { background: #3a3a3d; }
+  .kapak-buyuk { display: block; width: 100%; aspect-ratio: 315 / 250; object-fit: cover; border-radius: var(--yaricap-kart); box-shadow: var(--golge-yuksek); background: var(--panel2); }
+
+  .galeri { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .galeri button { padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; cursor: zoom-in; background: var(--panel2); aspect-ratio: 16 / 10; }
+  .galeri img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+  .galeri button:hover img { transform: scale(1.04); }
+  .video { aspect-ratio: 16 / 9; width: 100%; border: 0; border-radius: 10px; background: #000; display: block; }
+
+  .yan .kart { padding: 20px; }
+  .yan h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent-text); }
+  .yan .btn { width: 100%; }
+  .yan .btn + .btn { margin-top: 10px; }
+  .uyeler { list-style: none; margin: 0; padding: 0; }
+  .uyeler li { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .uyeler li:first-child { border-top: 0; padding-top: 0; }
+  .uyeler .bas { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); display: grid; place-items: center; font-weight: 700; font-size: 14px; flex: none; }
+  .uyeler small { display: block; color: var(--muted); font-size: 12.5px; }
+  .bilgi-satir { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .bilgi-satir:first-of-type { border-top: 0; padding-top: 0; }
+  .bilgi-satir .ik { color: var(--muted); margin-top: 3px; }
+  .bilgi-satir small { display: block; color: var(--muted); font-size: 12px; }
+
+  .isik { position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 60; display: grid; place-items: center; padding: 50px 16px; }
+  .isik img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+  .isik button { position: absolute; background: rgba(255,255,255,.12); border: 0; color: #fff; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; }
+  .isik button:hover { background: rgba(255,255,255,.25); }
+  .isik .kapat { top: 14px; right: 14px; }
+  .isik .onc { left: 14px; top: 50%; transform: translateY(-50%); }
+  .isik .snr { right: 14px; top: 50%; transform: translateY(-50%); }
+</style>
+</head>
+<body>
+<header class="ust">
+  <div class="ust-ic">
+    <a class="gt-brand" href="./"><img src="genc.png" alt=""><span class="gt-yazi"><small>MEB · YEĞİTEK</small><b>GençTek</b></span></a>
+    <a class="ej" href="./" id="ustAd">Eğiti<span>JAM</span></a>
+    <nav>
+      <a href="./#oyunlar" class="secili">Oyunlar</a>
+      <a href="./#hakkinda">Etkinlik & Kurallar</a>
+      <a href="takim" data-giris>Takım girişi</a>
+      <a href="mentor" data-giris>Mentör</a>
+      <a href="juri" data-giris>Jüri</a>
+    </nav>
+  </div>
+</header>
+
+<div id="icerik"><p class="bos">Yükleniyor…</p></div>
+
+<footer class="alt-bilgi"><a href="./">Tüm oyunlara dön</a></footer>
+
+<script src="ortak.js"></script>
+<script>
+const { esc, ik, api, dosya, metin, boyut } = EJ;
+// Giriş yapılmışsa menüde kişinin panel bağlantıları görünür
+EJ.oturumMenu(document.querySelector('.ust nav'));
+const id = decodeURIComponent(location.pathname.replace(/\/+$/, '').split('/').pop());
+
+// Yayında olmayan ürünü önizleyebilmek için varsa oturum jetonu gönderilir
+async function getir() {
+  for (const rol of ['yonetim', 'juri', 'takim', null]) {
+    if (rol && !EJ.jeton(rol)) continue;
+    try { return await api('GET', 'api/urun/' + encodeURIComponent(id), undefined, rol); }
+    catch (e) { if (e.status !== 404 && e.status !== 401) throw e; }
+  }
+  return null;
+}
+
+function bas(ad) { return esc((ad.trim()[0] || '?').toLocaleUpperCase('tr')); }
+
+function ciz(u, e) {
+  document.title = `${u.baslik || 'İsimsiz ürün'} · ${e.ad}`;
+  const m = (e.ad || '').match(/^(.*?)(JAM.*)$/i);
+  if (m) document.getElementById('ustAd').innerHTML = `${esc(m[1])}<span>${esc(m[2])}</span>`;
+  const yt = EJ.ytId(u.video);
+  const g = u.gorseller || [];
+  const onizleme = !u.yayinda || !u.baslik;
+
+  let sahne;
+  if (u.oyun) {
+    sahne = `<div class="sahne" id="sahne">
+      <button class="afis" id="baslat" type="button">
+        ${u.kapak ? `<img src="${dosya(u.id, u.kapak)}" alt="">` : ''}
+        <span class="ortala"><span class="dugme"><svg class="ik"><use href="ikonlar.svg#play"/></svg></span><b>Oyunu başlat</b><small>Tarayıcıda, kurulum gerekmeden</small></span>
+      </button>
+    </div>`;
+  } else if (u.kapak) {
+    sahne = `<img class="kapak-buyuk" src="${dosya(u.id, u.kapak)}" alt="${esc(u.baslik)} kapak görseli">`;
+  } else sahne = '';
+
+  document.getElementById('icerik').innerHTML = `
+    <section class="vitrin serit-on"><div class="kap">
+      <a class="geri" href="./#oyunlar">${ik('arrow-left')} Tüm oyunlar</a>
+      ${onizleme ? `<div class="bilgi u" style="margin-top:12px">${ik('eye-off')} Önizleme: bu sayfa ${!u.yayinda ? 'yönetici tarafından vitrinden kaldırıldı' : 'henüz vitrinde değil (oyun adı girilmemiş)'}; ziyaretçiler göremez.</div>` : ''}
+      <h1>${esc(u.baslik || 'İsimsiz ürün')}</h1>
+      <div class="kim"><span>${ik('users')} <b>${esc(u.takim)}</b></span>
+        ${u.il ? `<span>${ik('map-pin')} ${esc(u.il)}</span>` : ''}
+        ${u.okul ? `<span>${ik('graduation-cap')} ${esc(u.okul)}</span>` : ''}</div>
+      ${u.kisa ? `<p class="kisa">${esc(u.kisa)}</p>` : ''}
+      ${(u.rozet || (u.etiketler || []).length) ? `<div class="etiketler">${u.rozet ? `<span class="etiket rozet">${ik('trophy')} ${esc(u.rozet)}</span>` : ''}${(u.etiketler || []).map(t => `<span class="etiket">${esc(t)}</span>`).join('')}</div>` : ''}
+    </div></section>
+
+    <main class="kap duzen">
+      <div>
+        ${sahne}
+        <section class="kart"><h2>Oyun hakkında</h2><div class="yazi">${u.aciklama ? metin(u.aciklama) : '<p style="color:var(--muted)">Takım henüz açıklama eklemedi.</p>'}</div></section>
+        ${yt ? `<section class="kart"><h2>${ik('youtube')} Oynanış videosu</h2>
+          <iframe class="video" src="https://www.youtube-nocookie.com/embed/${yt}" title="Oynanış videosu" loading="lazy"
+            allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></section>`
+          : u.video ? `<section class="kart"><h2>${ik('youtube')} Oynanış videosu</h2><a href="${esc(u.video)}" target="_blank" rel="noopener noreferrer">${esc(u.video)}</a></section>` : ''}
+        ${g.length ? `<section class="kart"><h2>${ik('image')} Ekran görüntüleri</h2><div class="galeri">${g.map((x, i) =>
+          `<button type="button" data-i="${i}" aria-label="Ekran görüntüsü ${i + 1}"><img src="${dosya(u.id, x)}" alt="" loading="lazy"></button>`).join('')}</div></section>` : ''}
+        ${u.kontroller ? `<section class="kart"><h2>${ik('gamepad-2')} Nasıl oynanır?</h2><div class="yazi">${metin(u.kontroller)}</div></section>` : ''}
+        ${u.krediler ? `<section class="kart"><h2>${ik('sparkles')} Kullanılan hazır içerikler ve yapay zekâ</h2><div class="yazi">${metin(u.krediler)}</div></section>` : ''}
+      </div>
+      <aside class="yan">
+        <div class="kart" style="display:flex;flex-direction:column">
+          ${u.oyun ? `<button class="btn lg" type="button" id="baslat2">${ik('play')} Tarayıcıda oyna</button>` : ''}
+          ${u.indir ? `<a class="btn ${u.oyun ? 'ghost' : 'lg'}" href="${dosya(u.id, 'indir')}/${encodeURIComponent(u.indir.ad)}" download>${ik('download')} İndir <small style="font-weight:400;opacity:.8">(${boyut(u.indir.boyut)})</small></a>` : ''}
+          ${u.baglanti ? `<a class="btn ghost" href="${esc(u.baglanti)}" target="_blank" rel="noopener noreferrer">${ik('external-link')} Bağlantıyı aç</a>` : ''}
+          ${!u.oyun && !u.indir && !u.baglanti ? '<p style="margin:0;color:var(--muted);font-size:14px">Oyun dosyası henüz yüklenmedi.</p>' : ''}
+          ${u.indir ? '<p class="yard" style="margin-top:10px">İndirilen dosyalar öğrenci projesidir. Açmadan önce virüs taramasından geçirmeniz önerilir.</p>' : ''}
+        </div>
+        <div class="kart" style="margin-top:20px">
+          <h3>Ekip</h3>
+          ${(u.uyeler || []).length ? `<ul class="uyeler">${u.uyeler.map(x => `<li><span class="bas">${bas(x.ad)}</span><div>${esc(x.ad)}${x.rol ? `<small>${esc(x.rol)}</small>` : ''}</div></li>`).join('')}</ul>` : '<p style="margin:0;color:var(--muted);font-size:14px">Ekip üyeleri eklenmedi.</p>'}
+        </div>
+        <div class="kart" style="margin-top:20px">
+          <h3>Bilgiler</h3>
+          <div class="bilgi-satir">${ik('users')}<div><small>Takım</small>${esc(u.takim)}</div></div>
+          ${u.danisman ? `<div class="bilgi-satir">${ik('graduation-cap')}<div><small>Danışman öğretmen</small>${esc(u.danisman)}</div></div>` : ''}
+          ${u.okul ? `<div class="bilgi-satir">${ik('map-pin')}<div><small>Okul</small>${esc(u.okul)}${u.il ? ` · ${esc(u.il)}` : ''}</div></div>` : ''}
+          ${u.guncelleme ? `<div class="bilgi-satir">${ik('calendar-days')}<div><small>Son güncelleme</small>${EJ.zaman(u.guncelleme)}</div></div>` : ''}
+        </div>
+      </aside>
+    </main>`;
+
+  if (u.oyun) {
+    const baslat = () => oyunuBaslat(u);
+    document.getElementById('baslat').onclick = baslat;
+    document.getElementById('baslat2').onclick = () => { baslat(); document.getElementById('sahne').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  }
+  document.querySelectorAll('.galeri button').forEach(b => b.onclick = () => isik(u, g, +b.dataset.i));
+}
+
+function oyunuBaslat(u) {
+  const sahne = document.getElementById('sahne');
+  if (sahne.querySelector('iframe')) return;
+  const en = u.oyun.en || 960, boy = u.oyun.boy || 600;
+  // Oyun ayrı bir alan adındaysa (OYUN_ADRESI) kendi kökeninde tam yetkiyle çalışır;
+  // ana sitedeyse sunucu zaten CSP sandbox ile yalıtır, burada da allow-same-origin verilmez.
+  const ayri = /^https?:/i.test(u.oyun.adres);
+  const sb = 'allow-scripts allow-pointer-lock allow-popups allow-forms allow-modals allow-downloads allow-orientation-lock allow-presentation' + (ayri ? ' allow-same-origin' : '');
+  sahne.innerHTML = `<iframe class="oyun-cerceve" id="oyunCerceve" src="${esc(u.oyun.adres)}" title="${esc(u.baslik)}" sandbox="${sb}"
+      allow="fullscreen; autoplay; gamepad; accelerometer; gyroscope" allowfullscreen style="width:${en}px;aspect-ratio:${en}/${boy}"></iframe>
+    <div class="sahne-alt"><span>Oyun takılırsa sayfayı yenileyin. Klavye çalışmazsa oyun alanına bir kez tıklayın.</span>
+      <span style="display:flex;gap:8px"><button class="btn sm" type="button" id="yenile">${ik('rotate-ccw')} Yeniden başlat</button>
+      <button class="btn sm" type="button" id="tamEkran">${ik('maximize')} Tam ekran</button></span></div>`;
+  const f = document.getElementById('oyunCerceve');
+  f.focus();
+  document.getElementById('tamEkran').onclick = () => (f.requestFullscreen || f.webkitRequestFullscreen).call(f);
+  document.getElementById('yenile').onclick = () => { f.src = 'about:blank'; setTimeout(() => f.src = u.oyun.adres, 50); };
+}
+
+function isik(u, g, i) {
+  const el = document.createElement('div');
+  el.className = 'isik';
+  el.innerHTML = `<img alt=""><button class="kapat" aria-label="Kapat">${ik('x')}</button>
+    ${g.length > 1 ? `<button class="onc" aria-label="Önceki">${ik('arrow-left')}</button><button class="snr" aria-label="Sonraki">${ik('arrow-right')}</button>` : ''}`;
+  const goster = () => el.querySelector('img').src = dosya(u.id, g[i]);
+  const git = d => { i = (i + d + g.length) % g.length; goster(); };
+  const kapat = () => { el.remove(); document.removeEventListener('keydown', tus); };
+  const tus = ev => { if (ev.key === 'Escape') kapat(); else if (ev.key === 'ArrowLeft') git(-1); else if (ev.key === 'ArrowRight') git(1); };
+  el.onclick = ev => { if (ev.target === el) kapat(); };
+  el.querySelector('.kapat').onclick = kapat;
+  if (g.length > 1) { el.querySelector('.onc').onclick = () => git(-1); el.querySelector('.snr').onclick = () => git(1); }
+  document.addEventListener('keydown', tus);
+  goster();
+  document.body.appendChild(el);
+}
+
+getir().then(d => {
+  if (!d) {
+    document.getElementById('icerik').innerHTML = `<div class="kap"><p class="bos">Bu oyun bulunamadı ya da henüz yayında değil.<br><br><a class="btn" href="./">Tüm oyunlar</a></p></div>`;
+    return;
+  }
+  window.temaUygula(d.tema);
+  ciz(d.urun, d.event);
+}).catch(err => {
+  document.getElementById('icerik').innerHTML = `<div class="kap"><p class="bos">Sayfa yüklenemedi: ${esc(err.message)}</p></div>`;
+});
+</script>
+</body>
+</html>

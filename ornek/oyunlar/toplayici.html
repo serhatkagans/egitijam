@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Işık Zinciri</title>
+<style>html, body { margin: 0; height: 100%; background: #0a0c1e; overflow: hidden; } canvas { display: block; width: 100%; height: 100%; }</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Örnek oyun: ışık kıvılcımını yönetip ışık toplarını topla; toplanan her ışık zincire eklenir.
+const c = document.getElementById('c'), x = c.getContext('2d');
+let W, H, p = devicePixelRatio;
+function boyut() { W = c.width = innerWidth * p; H = c.height = innerHeight * p; }
+onresize = boyut; boyut();
+const tus = {};
+onkeydown = e => { tus[e.key] = true; if (e.key.startsWith('Arrow')) e.preventDefault(); };
+onkeyup = e => tus[e.key] = false;
+let oyuncu = { x: W / 2, y: H / 2 }, zincir = [], toplar = [], golgeler = [], puan = 0, en = 0, sure = 0, bitti = false;
+function yeniTop() { toplar.push({ x: 40 * p + Math.random() * (W - 80 * p), y: 60 * p + Math.random() * (H - 100 * p), t: Math.random() * 6 }); }
+for (let i = 0; i < 5; i++) yeniTop();
+function guncelle() {
+  if (bitti) { if (tus[' ']) { bitti = false; zincir = []; golgeler = []; puan = 0; sure = 0; } return; }
+  const h = 4.5 * p;
+  if (tus.ArrowLeft) oyuncu.x -= h; if (tus.ArrowRight) oyuncu.x += h; if (tus.ArrowUp) oyuncu.y -= h; if (tus.ArrowDown) oyuncu.y += h;
+  oyuncu.x = Math.max(10, Math.min(W - 10, oyuncu.x)); oyuncu.y = Math.max(10, Math.min(H - 10, oyuncu.y));
+  // Zincir oyuncuyu izler
+  let onceki = oyuncu;
+  for (const z of zincir) { const dx = onceki.x - z.x, dy = onceki.y - z.y, d = Math.hypot(dx, dy), m = 22 * p; if (d > m) { z.x += dx * (1 - m / d); z.y += dy * (1 - m / d); } onceki = z; }
+  const once = toplar.length;
+  toplar = toplar.filter(t => { if (Math.hypot(t.x - oyuncu.x, t.y - oyuncu.y) < 24 * p) { puan++; zincir.push({ x: oyuncu.x, y: oyuncu.y }); return false; } return true; });
+  for (let i = toplar.length; i < once; i++) yeniTop(); // toplananın yerine yenisi
+  // Gölgeler zamanla çoğalır; dokunan ışığı söndürür
+  if (++sure % 240 === 0) golgeler.push({ x: Math.random() < .5 ? 0 : W, y: Math.random() * H, a: Math.random() * 6 });
+  for (const g of golgeler) {
+    g.a += (Math.random() - .5) * .3; g.x += Math.cos(g.a) * 1.6 * p; g.y += Math.sin(g.a) * 1.6 * p;
+    if (g.x < 0 || g.x > W) g.a = Math.PI - g.a; if (g.y < 0 || g.y > H) g.a = -g.a;
+    if (Math.hypot(g.x - oyuncu.x, g.y - oyuncu.y) < 26 * p) { bitti = true; en = Math.max(en, puan); }
+  }
+}
+function parilti(px, py, r, renk) { const g = x.createRadialGradient(px, py, 0, px, py, r); g.addColorStop(0, renk); g.addColorStop(1, 'transparent'); x.fillStyle = g; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill(); }
+function ciz() {
+  x.fillStyle = 'rgba(10,12,30,.35)'; x.fillRect(0, 0, W, H);
+  const t = performance.now() / 400;
+  for (const b of toplar) { parilti(b.x, b.y, (26 + Math.sin(t + b.t) * 4) * p, 'rgba(255,190,90,.9)'); x.fillStyle = '#fff3d6'; x.beginPath(); x.arc(b.x, b.y, 6 * p, 0, 7); x.fill(); }
+  for (const g of golgeler) { parilti(g.x, g.y, 34 * p, 'rgba(120,60,200,.8)'); x.fillStyle = '#1b0f30'; x.beginPath(); x.arc(g.x, g.y, 12 * p, 0, 7); x.fill(); }
+  x.strokeStyle = 'rgba(255,210,120,.7)'; x.lineWidth = 3 * p; x.beginPath(); x.moveTo(oyuncu.x, oyuncu.y); zincir.forEach(z => x.lineTo(z.x, z.y)); x.stroke();
+  zincir.forEach(z => parilti(z.x, z.y, 16 * p, 'rgba(255,200,110,.8)'));
+  parilti(oyuncu.x, oyuncu.y, 40 * p, 'rgba(255,230,170,1)'); x.fillStyle = '#fff'; x.beginPath(); x.arc(oyuncu.x, oyuncu.y, 8 * p, 0, 7); x.fill();
+  x.fillStyle = '#fff'; x.font = `bold ${20 * p}px system-ui`; x.fillText(`Işık: ${puan}`, 16 * p, 32 * p);
+  x.font = `${14 * p}px system-ui`; x.fillStyle = '#a9a3d6'; x.fillText('Ok tuşları ile ışıkları topla, mor gölgelerden kaç', 16 * p, 54 * p);
+  if (bitti) {
+    x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect(0, 0, W, H); x.textAlign = 'center'; x.fillStyle = '#ffd28a';
+    x.font = `bold ${38 * p}px system-ui`; x.fillText(`Işık söndü! Zincir: ${puan}`, W / 2, H / 2);
+    x.font = `${18 * p}px system-ui`; x.fillStyle = '#fff'; x.fillText(`En iyi: ${en} · Yeniden başlamak için Boşluk`, W / 2, H / 2 + 36 * p); x.textAlign = 'left';
+  }
+}
+function dongu() { guncelle(); ciz(); requestAnimationFrame(dongu); }
+dongu();
+</script>
+</body>
+</html>

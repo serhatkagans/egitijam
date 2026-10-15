@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hafıza Ortakları</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, "Segoe UI", sans-serif; background: radial-gradient(900px 500px at 80% -10%, #3b7fc4, #245a96 50%, #14355c); color: #fff; overflow: hidden; }
+  .ust { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; font-weight: 700; }
+  .ust button { font: inherit; background: #fff; color: #14355c; border: 0; border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+  .masa { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2.2vmin; padding: 0 3vmin; height: calc(100% - 64px); max-width: 1000px; margin: 0 auto; align-content: center; }
+  .kart { aspect-ratio: 3 / 4; perspective: 600px; cursor: pointer; }
+  .kart div { position: relative; width: 100%; height: 100%; transition: transform .35s; transform-style: preserve-3d; }
+  .kart.acik div, .kart.tamam div { transform: rotateY(180deg); }
+  .kart span { position: absolute; inset: 0; border-radius: 10px; display: grid; place-items: center; backface-visibility: hidden; font-size: 6vmin; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+  .kart .arka { background: #c4161c; border: 3px solid rgba(255,255,255,.35); }
+  .kart .arka::after { content: "?"; font-weight: 800; color: rgba(255,255,255,.6); font-size: 5vmin; }
+  .kart .on { background: #fff; transform: rotateY(180deg); }
+  .kart.tamam .on { background: #e8f4ee; }
+  .bitti { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; place-items: center; text-align: center; font-size: 28px; font-weight: 800; }
+  .bitti.goster { display: grid; }
+</style>
+</head>
+<body>
+<div class="ust"><span id="durum">Hamle: 0 · Bulunan: 0 / 9</span><button id="yeni">Yeniden</button></div>
+<div class="masa" id="masa"></div>
+<div class="bitti" id="bitti"><div>🎉 Tebrikler!<br><small id="sonuc" style="font-weight:500;font-size:18px"></small><br><br><button onclick="kur()" style="font:inherit;font-size:18px;padding:8px 18px;border:0;border-radius:8px;cursor:pointer">Tekrar oyna</button></div></div>
+<script>
+// Örnek oyun: klasik hafıza eşleştirme
+const SEMBOL = ['🍎', '🚀', '🌍', '📚', '🎨', '🎵', '⚽', '🔬', '🌳'];
+let acik = [], hamle = 0, bulunan = 0, kilit = false;
+function kur() {
+  document.getElementById('bitti').classList.remove('goster');
+  acik = []; hamle = 0; bulunan = 0; kilit = false;
+  const deste = [...SEMBOL, ...SEMBOL].sort(() => Math.random() - .5);
+  document.getElementById('masa').innerHTML = deste.map(s => `<div class="kart" data-s="${s}"><div><span class="arka"></span><span class="on">${s}</span></div></div>`).join('');
+  yaz();
+}
+function yaz() { document.getElementById('durum').textContent = `Hamle: ${hamle} · Bulunan: ${bulunan} / ${SEMBOL.length}`; }
+document.getElementById('masa').onclick = e => {
+  const k = e.target.closest('.kart');
+  if (!k || kilit || k.classList.contains('acik') || k.classList.contains('tamam')) return;
+  k.classList.add('acik'); acik.push(k);
+  if (acik.length < 2) return;
+  hamle++;
+  const [a, b] = acik; acik = [];
+  if (a.dataset.s === b.dataset.s) {
+    a.classList.replace('acik', 'tamam'); b.classList.replace('acik', 'tamam'); bulunan++;
+    if (bulunan === SEMBOL.length) setTimeout(() => { document.getElementById('sonuc').textContent = `${hamle} hamlede tamamladınız.`; document.getElementById('bitti').classList.add('goster'); }, 500);
+  } else { kilit = true; setTimeout(() => { a.classList.remove('acik'); b.classList.remove('acik'); kilit = false; }, 800); }
+  yaz();
+};
+document.getElementById('yeni').onclick = kur;
+kur();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Gizli ayarlar
+.env
+
+# Veri: veritabanı (ve yedekleri), takımların yüklediği dosyalar, mesaj ekleri, arşiv kapakları
+*.db
+*.db-*
+urunler/
+ekler/
+arsiv/
+gecici/
+data/
+
+node_modules/
+*.tar.gz
+
+# Deneme hesaplarının giriş bilgileri
+test-hesaplari.txt

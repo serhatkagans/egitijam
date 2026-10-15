@@ -1,0 +1,218 @@
+/*
+  GençTek görsel dili — ../gençtek/src/app/globals.css "Tema D: GençTek marka"
+  bloğunun bu uygulamadaki karşılığı. Renk değerleri birebir aynıdır:
+
+    #c4161c  kırmızı        (Pantone 7621 C)
+    #414042  nötr siyah     (Neutral Black U)
+    #939598  soğuk gri      (Cool Gray 8 U)
+
+  Sayfalar renk adı değil anlam adı kullanır (--panel, --accent ...); bu kısa
+  adlar aşağıda GençTek değişkenlerine bağlanır.
+*/
+
+/*
+  Yazı tipleri KENDİ SUNUCUMUZDAN (public/yazi/): salonda internet olmasa da
+  ekranlar aynı görünür. Dosyalar GençTek'in next/font derlemesinden alındı;
+  yalnızca latin + latin-ext (Türkçe harfler latin-ext'tedir).
+*/
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(yazi/inter-latin-ext.woff2) format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Inter"; font-style: normal; font-weight: 100 900; font-display: swap; src: url(yazi/inter-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 600 800; font-display: swap; src: url(yazi/jakarta-latin-ext.woff2) format("woff2");
+  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 600 800; font-display: swap; src: url(yazi/jakarta-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+304, U+308, U+329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+:root {
+  --renk-zemin: #f6f7f9;
+  --renk-kart: #ffffff;
+  --renk-cizgi: #e5e6e9;
+  --renk-cizgi-guclu: #939598;
+  --renk-metin: #414042;
+  --renk-metin-yumusak: #6d6e71;
+  --renk-baslik: #414042;
+
+  --renk-serit: #5e0d10;
+  --renk-serit-metin: #f3d3d4;
+  --renk-serit-cizgi: #7d1418;
+
+  --renk-ust-bar-secili-zemin: #fdeceb;
+  --renk-ust-bar-secili-metin: #a01217;
+
+  --renk-vitrin: #c4161c;
+  --renk-vitrin-koyu: #7d0e12;
+  --renk-vitrin-isik: #d1494e;
+  --renk-vitrin-metin: #ffffff;
+  --renk-vitrin-metin-yumusak: #fadadb;
+  --renk-vitrin-cizgi: #f0b4b6;
+
+  --renk-birincil: #c4161c;
+  --renk-birincil-koyu: #9e1116;
+  --renk-birincil-metin: #ffffff;
+
+  --renk-vurgu: #c4161c;
+  --renk-vurgu-zemin: #fdeceb;
+  --renk-vurgu-metin: #a01217;
+
+  --renk-olumlu-zemin: #e8f4ee;
+  --renk-olumlu-cizgi: #1f7a4d;
+  --renk-olumlu-metin: #14563a;
+
+  --renk-uyari-zemin: #fdf3dc;
+  --renk-uyari-cizgi: #d99b06;
+  --renk-uyari-metin: #7a5504;
+
+  --renk-hata-zemin: #fbd9d8;
+  --renk-hata-cizgi: #c4161c;
+  --renk-hata-metin: #8e1014;
+
+  --yaricap-kart: 0.875rem;
+  --yaricap-kutu: 0.625rem;
+  --golge-kart: 0 1px 2px rgba(65, 64, 66, 0.05), 0 6px 20px rgba(65, 64, 66, 0.05);
+  --golge-yuksek: 0 12px 34px rgba(65, 64, 66, 0.14);
+
+  --yazi-govde: "Inter", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --yazi-baslik: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+
+  /* Sayfaların kullandığı kısa adlar */
+  --bg: var(--renk-zemin);
+  --panel: var(--renk-kart);
+  --panel2: var(--renk-zemin);
+  --line: var(--renk-cizgi);
+  --line-strong: var(--renk-cizgi-guclu);
+  --text: var(--renk-metin);
+  --muted: var(--renk-metin-yumusak);
+  --accent: var(--renk-birincil);
+  --accent2: var(--renk-birincil-koyu);
+  --accent-soft: var(--renk-vurgu-zemin);
+  --accent-text: var(--renk-vurgu-metin);
+  --ok: var(--renk-olumlu-cizgi);
+  --ok-text: var(--renk-olumlu-metin);
+  --ok-soft: var(--renk-olumlu-zemin);
+  --warn: var(--renk-uyari-metin);
+  --warn-line: var(--renk-uyari-cizgi);
+  --warn-soft: var(--renk-uyari-zemin);
+  --err: var(--renk-hata-metin);
+  --err-line: var(--renk-hata-cizgi);
+  --err-soft: var(--renk-hata-zemin);
+
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--renk-zemin);
+  color: var(--renk-metin);
+  font-family: var(--yazi-govde);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--yazi-baslik);
+  letter-spacing: -0.02em;
+}
+
+/* Kırmızı gradyan yüzey (GençTek "vitrin") + sağ üstte sönümlenen ızgara dokusu */
+.vitrin {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(1100px 460px at 82% -25%, var(--renk-vitrin-isik) 0%, var(--renk-vitrin) 44%, var(--renk-vitrin-koyu) 100%);
+  color: var(--renk-vitrin-metin);
+}
+.vitrin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 34px 34px;
+  -webkit-mask: radial-gradient(560px 380px at 80% 8%, #000, transparent 72%);
+  mask: radial-gradient(560px 380px at 80% 8%, #000, transparent 72%);
+  pointer-events: none;
+}
+.vitrin > * { position: relative; z-index: 1; }
+
+/* İnce koyu kırmızı üst şerit */
+.serit {
+  background: var(--renk-serit);
+  color: var(--renk-serit-metin);
+  border-bottom: 1px solid var(--renk-serit-cizgi);
+}
+
+/*
+  GençTek marka bloğu — ../gençtek/src/app/panel/layout.tsx'teki üst barın
+  karşılığı: kırmızı "g" işareti + "MEB · YEĞİTEK / GençTek" yazısı.
+  Beyaz zeminde işaret doğrudan oturur; kırmızı zeminde (.ters) beyaz kutu içinde durur.
+*/
+.gt-brand { display: inline-flex; align-items: center; gap: 10px; flex: none; text-decoration: none; }
+.gt-brand img { height: 40px; width: 40px; object-fit: contain; }
+.gt-brand .gt-yazi { display: flex; flex-direction: column; line-height: 1.1; }
+.gt-brand small { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--renk-vurgu-metin); }
+.gt-brand b { font-family: var(--yazi-baslik); font-size: 19px; font-weight: 800; color: var(--renk-baslik); letter-spacing: -0.02em; }
+.gt-brand + * { padding-left: 14px; border-left: 1px solid var(--renk-cizgi); }
+.gt-brand.ters img { height: 46px; width: 46px; background: #fff; border-radius: var(--yaricap-kutu); padding: 6px; box-shadow: var(--golge-kart); }
+.gt-brand.ters small { color: var(--renk-vitrin-metin-yumusak); }
+.gt-brand.ters b { color: var(--renk-vitrin-metin); }
+.gt-brand.ters + * { border-left-color: rgba(255, 255, 255, .3); }
+@media (max-width: 760px) {
+  .gt-brand img { height: 32px; width: 32px; }
+  .gt-brand .gt-yazi { display: none; }
+  .gt-brand + * { padding-left: 0; border-left: 0; }
+}
+
+/* Simgeler: public/ikonlar.svg (lucide, GençTek ile aynı set). Kullanım: <svg class="ik"><use href="ikonlar.svg#trophy"/></svg> */
+.ik { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.17em; flex: none; pointer-events: none; }
+
+/*
+  Tema B: Sade kurumsal (mavi) — ../gençtek/src/app/globals.css [data-tema="b"]
+  bloğunun aynısı. Yönetim panelinden seçilir; <html data-tema="b"> ile devreye girer.
+  Kısa adlar (--panel, --accent ...) :root'ta --renk-* değişkenlerine bağlı olduğu ve
+  data-tema da <html>'e (yani :root'a) yazıldığı için sayfalara dokunmak gerekmez.
+*/
+[data-tema="b"] {
+  --renk-zemin: #f8fafc;
+  --renk-kart: #ffffff;
+  --renk-cizgi: #e6ebf1;
+  --renk-cizgi-guclu: #94a3b8;
+  --renk-metin: #0f172a;
+  --renk-metin-yumusak: #64748b;
+  --renk-baslik: #12294a;
+
+  --renk-serit: #12294a;
+  --renk-serit-metin: #c7d7ea;
+  --renk-serit-cizgi: #1e3d68;
+
+  --renk-ust-bar-secili-zemin: #eef4fb;
+  --renk-ust-bar-secili-metin: #1c4576;
+
+  --renk-vitrin: #245a96;
+  --renk-vitrin-koyu: #14355c;
+  --renk-vitrin-isik: #3b7fc4;
+  --renk-vitrin-metin: #ffffff;
+  --renk-vitrin-metin-yumusak: #d3e3f5;
+  --renk-vitrin-cizgi: #7ea9d5;
+
+  --renk-birincil: #245a96;
+  --renk-birincil-koyu: #1c4576;
+  --renk-birincil-metin: #ffffff;
+
+  --renk-vurgu: #2f6fb5;
+  --renk-vurgu-zemin: #eef4fb;
+  --renk-vurgu-metin: #1c4576;
+
+  --renk-olumlu-zemin: #ecfdf5;
+  --renk-olumlu-cizgi: #059669; /* GençTek: #6ee7b7 — burada nokta/anahtar rengi olarak da kullanıldığı için koyulaştırıldı */
+  --renk-olumlu-metin: #065f46;
+
+  --renk-uyari-zemin: #fffbeb;
+  --renk-uyari-cizgi: #fcd34d;
+  --renk-uyari-metin: #92400e;
+
+  --renk-hata-zemin: #fef2f2;
+  --renk-hata-cizgi: #fca5a5;
+  --renk-hata-metin: #991b1b;
+
+  --golge-kart: 0 1px 2px rgba(15, 23, 42, 0.05), 0 6px 20px rgba(15, 23, 42, 0.05);
+  --golge-yuksek: 0 12px 34px rgba(15, 23, 42, 0.14);
+}

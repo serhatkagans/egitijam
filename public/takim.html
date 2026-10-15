@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Takım Paneli · EğitiJAM</title>
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="stylesheet" href="tema.css">
+<link rel="stylesheet" href="ortak.css">
+<script src="tema.js"></script>
+<style>
+  .duzen { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; margin: 24px auto 0; align-items: start; }
+  @media (max-width: 960px) { .duzen { grid-template-columns: 1fr; } .yan { order: -1; } }
+  .form { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  section.kart { padding: 22px; }
+  section.kart > h2 { display: flex; align-items: center; gap: 8px; }
+  section.kart > h2 .no { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); display: grid; place-items: center; font-size: 13px; flex: none; }
+  .yan { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; }
+  @media (max-width: 960px) { .yan { position: static; } }
+  .yan .kart { padding: 18px; }
+  .yan h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent-text); }
+  .liste-kontrol { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  .liste-kontrol li { display: flex; gap: 8px; align-items: center; padding: 5px 0; }
+  .liste-kontrol .d { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line-strong); display: grid; place-items: center; flex: none; }
+  .liste-kontrol li.ok .d { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .liste-kontrol li.ok .d .ik { width: 12px; height: 12px; }
+  .liste-kontrol li.ok span { color: var(--muted); }
+  .liste-kontrol small { color: var(--muted); }
+  .kaydet-alan .btn { width: 100%; }
+  .kaydet-alan p { margin: 8px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+  .kaydet-alan.kirli p { color: var(--warn); font-weight: 600; }
+
+  .karsila { padding: 22px 0; }
+  .karsila h1 { margin: 0; font-size: 26px; }
+  .karsila p { margin: 4px 0 0; color: var(--renk-vitrin-metin-yumusak); }
+  .karsila .kap { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .karsila .eylem { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .dosya-kutu { border: 2px dashed var(--line-strong); border-radius: var(--yaricap-kart); padding: 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .dosya-kutu.dolu { border-style: solid; border-color: var(--ok); background: var(--ok-soft); }
+  .dosya-kutu.surukle { border-color: var(--accent); background: var(--accent-soft); }
+  .dosya-kutu > .ik { width: 34px; height: 34px; color: var(--muted); flex: none; }
+  .dosya-kutu.dolu > .ik { color: var(--ok); }
+  .dosya-kutu .ad { flex: 1 1 200px; min-width: 0; }
+  .dosya-kutu .ad b { display: block; word-break: break-all; }
+  .dosya-kutu .ad small { color: var(--muted); }
+  .dosya-kutu .eylem { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dosya-kutu .cubuk { flex-basis: 100%; }
+  .kapak-on { width: 220px; aspect-ratio: 315/250; border-radius: 10px; object-fit: cover; background: var(--panel2); border: 1px solid var(--line); flex: none; }
+  .ipucu { background: var(--panel2); border-radius: var(--yaricap-kutu); padding: 12px 14px; font-size: 13.5px; margin-top: 10px; }
+  .ipucu summary { cursor: pointer; font-weight: 600; }
+  .ipucu ul { margin: 8px 0 0; padding-left: 18px; }
+  .ipucu li { margin-bottom: 4px; }
+
+  .uye { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 8px; }
+  @media (max-width: 560px) { .uye { grid-template-columns: 1fr auto; } .uye input:nth-child(2) { grid-column: 1; } }
+
+  .galeri { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+  .galeri .g { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); aspect-ratio: 16/10; background: var(--panel2); }
+  .galeri img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .galeri .eylem { position: absolute; bottom: 6px; right: 6px; display: flex; gap: 4px; }
+  .galeri .eylem button { background: rgba(0,0,0,.65); color: #fff; border: 0; border-radius: 6px; padding: 5px; cursor: pointer; display: grid; place-items: center; }
+  .galeri .eylem button:hover { background: rgba(0,0,0,.85); }
+  .galeri .eylem button:disabled { opacity: .3; cursor: default; }
+  .galeri .ekle { border: 2px dashed var(--line-strong); display: grid; place-items: center; color: var(--muted); cursor: pointer; background: transparent; font-weight: 600; font-size: 14px; }
+  .galeri .ekle:hover { border-color: var(--accent); color: var(--accent-text); }
+
+  .sayac { float: right; font-weight: 400; color: var(--muted); font-size: 12px; }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+</style>
+</head>
+<body>
+
+<div id="girisEkran" class="giris hidden">
+  <form class="kart" id="girisForm">
+    <img class="logo" src="genc.png" alt="">
+    <h1>Takım girişi</h1>
+    <p class="alt">Oyun sayfanızı hazırlamak için yöneticinin verdiği bilgilerle giriş yapın.</p>
+    <label class="l" for="gKul">Kullanıcı adı</label>
+    <input type="text" id="gKul" autocomplete="username" autocapitalize="none" required>
+    <label class="l" for="gSif">Şifre</label>
+    <input type="password" id="gSif" autocomplete="current-password" required>
+    <button class="btn" type="submit">Giriş yap</button>
+    <div class="hata" id="gHata" role="alert"></div>
+    <a class="geri" href="./">← Oyun vitrinine dön</a>
+  </form>
+</div>
+
+<div id="panel" class="hidden">
+  <header class="ust">
+    <div class="ust-ic">
+      <a class="gt-brand" href="./"><img src="genc.png" alt=""><span class="gt-yazi"><small>MEB · YEĞİTEK</small><b>GençTek</b></span></a>
+      <a class="ej" href="./">Eğiti<span>JAM</span></a>
+      <nav>
+        <a href="./">Vitrin</a>
+        <a href="#" id="sayfaAc" class="secili">Oyun sayfası</a>
+        <a href="#" id="mesajAc">Mesajlar<span id="mesajSayac"></span></a>
+        <a href="#" id="sayfamMenu" target="_blank">Sayfamı görüntüle</a>
+        <a href="#" id="sifreAc">Şifre değiştir</a>
+        <a href="#" id="cikis">Çıkış</a>
+        <span class="oturum-ad hidden" id="oturumAd" title="Giriş yapılan hesap"></span>
+      </nav>
+    </div>
+  </header>
+
+  <section class="vitrin karsila"><div class="kap">
+    <div><h1 id="takimAd"></h1><p id="takimAlt"></p></div>
+    <div class="eylem"><a class="btn white hidden" id="belgeBtn" target="_blank"><svg class="ik"><use href="ikonlar.svg#award"/></svg> Katılım belgeleri</a><a class="btn white" id="gorBtn" target="_blank"></a></div>
+  </div></section>
+
+  <div class="kap hidden" id="mesajGorunum" style="margin-top:24px"><div id="sohbet"></div></div>
+
+  <div class="kap" id="sayfaGorunum">
+    <div id="teslimSayac" class="bilgi k hidden" style="margin-top:20px" role="timer"></div>
+    <div id="uyarilar" style="margin-top:20px;display:flex;flex-direction:column;gap:10px"></div>
+    <section class="kart hidden" id="geriKart" style="margin-top:20px;padding:22px">
+      <h2 style="display:flex;align-items:center;gap:8px;margin-top:0"><svg class="ik"><use href="ikonlar.svg#message-square"/></svg> Jüriden geri bildirimler</h2>
+      <p style="color:var(--muted);margin-top:0">Jüri üyelerinin oyununuz için yazdıkları. Kimin yazdığı ve puanlar gösterilmez.</p>
+      <div id="geriListe" style="display:flex;flex-direction:column;gap:10px"></div>
+    </section>
+    <div class="duzen">
+      <fieldset class="form" id="form">
+        <section class="kart">
+          <h2><span class="no">1</span> Temel bilgiler</h2>
+          <p>Oyunun vitrinde görünecek adı ve tek cümlelik tanıtımı.</p>
+          <label class="l" for="baslik">Oyunun adı <span class="sayac" data-for="baslik"></span></label>
+          <input type="text" id="baslik" maxlength="80" placeholder="Örn. Birlikte Güçlüyüz">
+          <label class="l" for="kisa">Kısa tanıtım <small>(vitrindeki kartta görünür)</small> <span class="sayac" data-for="kisa"></span></label>
+          <input type="text" id="kisa" maxlength="160" placeholder="Oyununuzu bir cümleyle anlatın">
+          <label class="l" for="etiketler">Etiketler <small>(virgülle ayırın, en fazla 6)</small></label>
+          <input type="text" id="etiketler" placeholder="Bulmaca, Platform, 2D, Eğitici">
+        </section>
+
+        <section class="kart">
+          <h2><span class="no">2</span> Kapak görseli</h2>
+          <p>Vitrinde ve oyun sayfasında görünür. Önerilen boyut 630×500 piksel (PNG, JPG, WEBP ya da GIF, en fazla 5 MB).</p>
+          <div class="dosya-kutu" id="kapakKutu"></div>
+        </section>
+
+        <section class="kart">
+          <h2><span class="no">3</span> Oyun dosyaları</h2>
+          <p>Oyununuz tarayıcıda çalışabiliyorsa web sürümünü yükleyin; ziyaretçiler ve jüri oyunu sayfada oynar. Windows sürümünü de indirilebilir dosya olarak ekleyin.</p>
+
+          <label class="l">Tarayıcıda oynanan sürüm <small>(HTML5 / WebGL, ZIP)</small></label>
+          <div class="dosya-kutu" id="oyunKutu"></div>
+          <div class="satir hidden" id="oyunBoyut">
+            <div><label class="l" for="oyunEn">Oyun alanı genişliği <small>(piksel)</small></label><input type="number" id="oyunEn" min="320" max="1920" step="1"></div>
+            <div><label class="l" for="oyunBoy">Oyun alanı yüksekliği <small>(piksel)</small></label><input type="number" id="oyunBoy" min="240" max="1200" step="1"></div>
+          </div>
+          <details class="ipucu">
+            <summary>Web sürümü nasıl hazırlanır?</summary>
+            <ul>
+              <li><b>Unity:</b> File → Build Settings → WebGL → Build. Oluşan klasörün içeriğini (index.html, Build/, TemplateData/) ZIP yapın. Player Settings → Publishing Settings'te sıkıştırmayı <i>Gzip</i> ya da <i>Disabled</i> seçin.</li>
+              <li><b>Godot 4:</b> Proje → Dışa Aktar → Web. Dosya adını <i>index.html</i> verin. <i>Thread Support</i> seçeneğini kapatın. Çıkan dosyaları ZIP yapın.</li>
+              <li><b>GDevelop, Construct, Phaser, PICO-8 ve diğer HTML5 araçları:</b> HTML5 / Web dışa aktarımını ZIP yapın.</li>
+              <li>ZIP'in içinde <b>index.html</b> bulunmalı. Klasörün kendisini de sıkıştırabilirsiniz, sistem index.html'i bulur.</li>
+              <li>Yüklemeden sonra "Dene" ile oyunun açıldığını mutlaka kontrol edin.</li>
+            </ul>
+          </details>
+
+          <label class="l" style="margin-top:20px">İndirilebilir sürüm <small>(Windows için ZIP/EXE; ayrıca 7Z, RAR, MSI, APK, SB3, PDF)</small></label>
+          <div class="dosya-kutu" id="indirKutu"></div>
+
+          <label class="l" for="baglanti">Dış bağlantı <small>(isteğe bağlı: Scratch, GitHub, itch.io sayfası vb.)</small></label>
+          <input type="url" id="baglanti" placeholder="https://">
+        </section>
+
+        <section class="kart">
+          <h2><span class="no">4</span> Oyun hakkında</h2>
+          <label class="l" for="aciklama">Tanıtım metni <small>(oyunun hikâyesi, amacı, temayla ilişkisi)</small> <span class="sayac" data-for="aciklama"></span></label>
+          <textarea id="aciklama" rows="9" maxlength="8000"></textarea>
+          <label class="l" for="kontroller">Nasıl oynanır? <small>(kontroller, tuşlar, ipuçları)</small></label>
+          <textarea id="kontroller" rows="4" maxlength="1500" placeholder="Ok tuşları: hareket&#10;Boşluk: zıpla"></textarea>
+        </section>
+
+        <section class="kart">
+          <h2><span class="no">5</span> Ekip</h2>
+          <p>Takım üyeleri ve görevleri (programlama, tasarım, ses, hikâye…). Danışman öğretmen bilgisi yönetici tarafından girilir.</p>
+          <div id="uyeler"></div>
+          <button class="btn ghost sm" type="button" id="uyeEkle" style="margin-top:10px"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Üye ekle</button>
+        </section>
+
+        <section class="kart">
+          <h2><span class="no">6</span> Ekran görüntüleri ve video</h2>
+          <p>En fazla 8 ekran görüntüsü. Sırayı oklarla değiştirebilirsiniz.</p>
+          <div class="galeri" id="galeri"></div>
+          <div class="cubuk hidden" id="galeriCubuk"><i></i></div>
+          <label class="l" for="video">Oynanış videosu bağlantısı <small>(YouTube)</small></label>
+          <input type="url" id="video" placeholder="https://www.youtube.com/watch?v=…">
+        </section>
+
+        <section class="kart">
+          <h2><span class="no">7</span> Hazır içerik ve yapay zekâ beyanı</h2>
+          <p>Kullandığınız hazır görsel, ses, müzik, kod ve yapay zekâ araçlarını kaynaklarıyla yazın. Kurallar gereği zorunludur.</p>
+          <textarea id="krediler" rows="5" maxlength="3000" placeholder="Müzik: … (kaynak bağlantısı)&#10;Karakter çizimleri: … &#10;Yapay zekâ: … ile … yapıldı"></textarea>
+        </section>
+      </fieldset>
+
+      <aside class="yan">
+        <div class="kart kaydet-alan" id="kaydetAlan">
+          <button class="btn lg" type="button" id="kaydet"><svg class="ik"><use href="ikonlar.svg#save"/></svg> Kaydet</button>
+          <p id="kaydetDurum">Tüm değişiklikler kayıtlı</p>
+        </div>
+        <div class="kart hidden" id="mentorKart">
+          <h3>Mentörleriniz</h3>
+          <div id="mentorListe" style="font-size:14px"></div>
+          <button class="btn ghost sm" type="button" id="mentoreYaz" style="margin-top:10px;width:100%"><svg class="ik"><use href="ikonlar.svg#message-square"/></svg> Mentörlere yaz</button>
+        </div>
+        <div class="kart">
+          <h3>Sayfa kontrol listesi</h3>
+          <ul class="liste-kontrol" id="kontrol"></ul>
+        </div>
+        <div class="kart" style="font-size:13.5px;color:var(--muted)">
+          Dosyalar seçildiği anda yüklenir. Metin alanlarını <b>Kaydet</b> ile kaydedin.
+          Sayfanızı vitrinde görmek için oyun adı girilmiş olmalıdır.
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<div class="pencere hidden" id="sifrePencere">
+  <form class="kart" id="sifreForm">
+    <div class="bas"><h2>Şifre değiştir</h2><button class="ikbtn" type="button" data-kapat><svg class="ik"><use href="ikonlar.svg#x"/></svg></button></div>
+    <label class="l" for="sEski">Mevcut şifre</label><input type="password" id="sEski" autocomplete="current-password" required>
+    <label class="l" for="sYeni">Yeni şifre <small>(en az 6 karakter)</small></label><input type="password" id="sYeni" autocomplete="new-password" minlength="6" required>
+    <div class="hata" id="sHata"></div>
+    <div class="ayak"><button class="btn ghost" type="button" data-kapat>Vazgeç</button><button class="btn" type="submit">Değiştir</button></div>
+  </form>
+</div>
+
+<input type="file" id="secKapak" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+<input type="file" id="secGorsel" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+<input type="file" id="secOyun" accept=".zip,application/zip" hidden>
+<input type="file" id="secIndir" accept=".zip,.7z,.rar,.exe,.msi,.apk,.sb3,.pdf" hidden>
+
+<script src="ortak.js"></script>
+<script src="sohbet.js"></script>
+<script>
+const { esc, ik, api, dosya, boyut, bildir } = EJ;
+const $ = id => document.getElementById(id);
+
+// Yönetici ya da atanmış mentör bir takımın sayfasını düzenlerken: /takim?takim=<id> (mentör: &rol=mentor)
+const PARAM = new URLSearchParams(location.search);
+const yoneticiTakim = PARAM.get('takim');
+const ROL = yoneticiTakim ? (PARAM.get('rol') === 'mentor' ? 'mentor' : 'yonetim') : 'takim';
+const PANEL = ROL === 'mentor' ? 'mentor' : 'yonetim';
+const ek = yoneticiTakim ? `takim=${encodeURIComponent(yoneticiTakim)}` : '';
+const yol = (p, q = '') => `api/takim/${p}` + ([q, ek].filter(Boolean).length ? '?' + [q, ek].filter(Boolean).join('&') : '');
+
+let D = null;       // sunucudan gelen takım durumu
+let kirli = false;  // kaydedilmemiş metin değişikliği
+let kilitli = false;
+
+const ALANLAR = ['baslik', 'kisa', 'etiketler', 'baglanti', 'aciklama', 'kontroller', 'video', 'krediler', 'oyunEn', 'oyunBoy'];
+
+function girisGoster() { $('girisEkran').classList.remove('hidden'); $('panel').classList.add('hidden'); $('gKul').focus(); }
+
+async function basla() {
+  if (!EJ.jeton(ROL)) {
+    if (yoneticiTakim) { document.body.innerHTML = `<p class="bos">Oturum yok. Önce <a href="${PANEL}">${ROL === 'mentor' ? 'mentör' : 'yönetim'} paneline</a> giriş yapın.</p>`; return; }
+    return girisGoster();
+  }
+  try { D = await api('GET', yol('ben'), undefined, ROL); }
+  catch (e) {
+    if (e.status === 401) { if (!yoneticiTakim) { EJ.jetonYaz(ROL, null); return girisGoster(); } location.href = PANEL; return; }
+    document.body.innerHTML = `<p class="bos">Yüklenemedi: ${esc(e.message)}</p>`; return;
+  }
+  window.temaUygula(D.tema);
+  $('girisEkran').classList.add('hidden'); $('panel').classList.remove('hidden');
+  formuDoldur(); dosyalariCiz(); ustCiz(); kontrolCiz();
+  if (!window.sayacDur && D.teslimAcik) window.sayacDur = EJ.geriSayim($('teslimSayac'), D.event, D.simdi, { kisa: true, once: 'Etkinliğin başlamasına', sure: 'Teslime kalan süre' });
+  if (ROL === 'takim' && !sohbet) {
+    sohbet = EJSohbet({ kok: $('sohbet'), rol: 'takim', odaklan: () => gorunum('mesaj'), degisti: n => {
+      $('mesajSayac').innerHTML = n ? `<span class="sayac-rozet">${n > 99 ? '99+' : n}</span>` : '';
+      document.title = (n ? `(${n}) ` : '') + 'Takım Paneli · EğitiJAM';
+    } });
+    if (location.hash === '#mesajlar') gorunum('mesaj');
+    // Vitrindeki menüden "Şifre değiştir" ile gelindiyse
+    if (location.hash === '#sifre') { history.replaceState(null, '', location.pathname); $('sifreAc').click(); }
+  }
+}
+
+// Oyun sayfası / Mesajlar görünümü
+let sohbet = null;
+function gorunum(g) {
+  $('sayfaGorunum').classList.toggle('hidden', g !== 'sayfa');
+  $('mesajGorunum').classList.toggle('hidden', g !== 'mesaj');
+  $('sayfaAc').classList.toggle('secili', g === 'sayfa');
+  $('mesajAc').classList.toggle('secili', g === 'mesaj');
+  document.querySelector('.karsila').classList.toggle('hidden', g === 'mesaj');
+  if (sohbet) sohbet.goster(g === 'mesaj');
+  history.replaceState(null, '', g === 'mesaj' ? '#mesajlar' : location.pathname + location.search);
+}
+$('sayfaAc').onclick = e => { e.preventDefault(); gorunum('sayfa'); };
+$('mesajAc').onclick = e => { e.preventDefault(); gorunum('mesaj'); };
+$('mentoreYaz').onclick = () => gorunum('mesaj');
+
+function ustCiz() {
+  $('takimAd').textContent = D.ad;
+  EJ.marka(D.event.ad);
+  // Üst menüde, vitrindeki gibi giriş yapılan hesabın adı (yönetici/mentör takımı düzenlerken gösterilmez)
+  $('oturumAd').classList.toggle('hidden', !!yoneticiTakim);
+  $('oturumAd').innerHTML = `${ik('users')}${esc(D.ad)}`;
+  $('takimAlt').textContent = [D.okul, D.il, D.danisman && `Danışman: ${D.danisman}`].filter(Boolean).join(' · ');
+  $('gorBtn').href = $('sayfamMenu').href = 'oyun/' + encodeURIComponent(D.id);
+  // Teslim kapanınca ekip üyeleri için katılım belgesi yazdırılabilir
+  $('belgeBtn').classList.toggle('hidden', !D.belgeAcik);
+  $('belgeBtn').href = 'belge' + (yoneticiTakim ? location.search : '');
+  const G = D.geriBildirim || [];
+  $('geriKart').classList.toggle('hidden', !G.length);
+  $('geriListe').innerHTML = G.map((g, i) => `<div style="background:var(--panel2);border-radius:var(--yaricap-kutu);padding:12px 14px;border-left:3px solid var(--accent)"><small style="color:var(--muted);font-weight:700">Jüri ${i + 1}</small><div style="margin-top:4px">${EJ.metin(g)}</div></div>`).join('');
+  $('gorBtn').innerHTML = `${ik('eye')} Sayfamı görüntüle`;
+  kilitli = !D.teslimAcik && !D.yonetici;
+  $('form').disabled = kilitli;
+  $('kaydet').disabled = kilitli;
+  const u = [];
+  if (D.yonetici) u.push(`<div class="bilgi k">${ik('shield-check')} Yönetici olarak <b>${esc(D.ad)}</b> takımının sayfasını düzenliyorsunuz. <a href="yonetim">Yönetim paneline dön</a></div>`);
+  if (D.mentor) u.push(`<div class="bilgi k">${ik('graduation-cap')} Mentör olarak <b>${esc(D.ad)}</b> takımının sayfasını düzenliyorsunuz. <a href="mentor">Mentör paneline dön</a></div>`);
+  if (kilitli) u.push(`<div class="bilgi u">${ik('lock')} Teslim süresi doldu. Sayfanız artık düzenlenemez, yalnızca görüntülenebilir.</div>`);
+  if (!D.yayinda) u.push(`<div class="bilgi h">${ik('eye-off')} Sayfanız yönetici tarafından vitrinden kaldırıldı. Ayrıntı için organizasyon ekibiyle iletişime geçin.</div>`);
+  $('uyarilar').innerHTML = u.join('');
+  if (yoneticiTakim) {
+    $('sifreAc').classList.add('hidden'); $('mesajAc').classList.add('hidden'); $('sayfaAc').classList.add('hidden');
+    $('cikis').textContent = ROL === 'mentor' ? 'Mentör paneli' : 'Yönetim paneli';
+  }
+  const M = D.mentorler || [];
+  $('mentorKart').classList.toggle('hidden', !!yoneticiTakim);
+  $('mentorListe').innerHTML = M.length ? M.map(m => `<div style="padding:3px 0"><b>${esc(m.ad)}</b>${m.alan ? ` <small style="color:var(--muted)">· ${esc(m.alan)}</small>` : ''}</div>`).join('')
+    : '<span style="color:var(--muted)">Henüz mentör atanmadı. Sorularınızı yine de yazabilirsiniz; tüm mentörler ve yönetim görür.</span>';
+}
+
+function formuDoldur() {
+  const s = D.sayfa;
+  $('baslik').value = s.baslik || '';
+  $('kisa').value = s.kisa || '';
+  $('etiketler').value = (s.etiketler || []).join(', ');
+  $('baglanti').value = s.baglanti || '';
+  $('aciklama').value = s.aciklama || '';
+  $('kontroller').value = s.kontroller || '';
+  $('video').value = s.video || '';
+  $('krediler').value = s.krediler || '';
+  $('oyunEn').value = s.oyun?.en || 960;
+  $('oyunBoy').value = s.oyun?.boy || 600;
+  const uyeler = s.uyeler && s.uyeler.length ? s.uyeler : [{ ad: '', rol: '' }];
+  $('uyeler').innerHTML = '';
+  uyeler.forEach(uyeSatiri);
+  document.querySelectorAll('.sayac').forEach(sayacGuncelle);
+  kirliYap(false);
+}
+
+function uyeSatiri(u = { ad: '', rol: '' }) {
+  const d = document.createElement('div');
+  d.className = 'uye';
+  d.innerHTML = `<input type="text" maxlength="60" placeholder="Ad Soyad" aria-label="Ad Soyad">
+    <input type="text" maxlength="80" placeholder="Görev (ör. Programlama, Ses tasarımı)" aria-label="Görev">
+    <button class="ikbtn" type="button" title="Üyeyi çıkar">${ik('trash-2')}</button>`;
+  const [ad, rol] = d.querySelectorAll('input');
+  ad.value = u.ad; rol.value = u.rol;
+  d.querySelector('button').onclick = () => { d.remove(); kirliYap(true); kontrolCiz(); };
+  $('uyeler').appendChild(d);
+}
+$('uyeEkle').onclick = () => {
+  if ($('uyeler').children.length >= 8) return bildir('En fazla 8 kişi eklenebilir', 'h');
+  uyeSatiri(); kirliYap(true); $('uyeler').lastElementChild.querySelector('input').focus();
+};
+
+function formVerisi() {
+  return {
+    baslik: $('baslik').value, kisa: $('kisa').value,
+    etiketler: $('etiketler').value.split(',').map(s => s.trim()).filter(Boolean),
+    baglanti: $('baglanti').value.trim(), aciklama: $('aciklama').value, kontroller: $('kontroller').value,
+    video: $('video').value.trim(), krediler: $('krediler').value,
+    uyeler: [...$('uyeler').children].map(d => { const [a, r] = d.querySelectorAll('input'); return { ad: a.value, rol: r.value }; }).filter(u => u.ad.trim()),
+    oyunBoyut: D.sayfa.oyun ? { en: +$('oyunEn').value, boy: +$('oyunBoy').value } : undefined
+  };
+}
+
+function kirliYap(v) {
+  kirli = v;
+  $('kaydetAlan').classList.toggle('kirli', v);
+  $('kaydetDurum').textContent = v ? 'Kaydedilmemiş değişiklikler var' : (D.guncelleme ? `Son kayıt: ${EJ.zaman(D.guncelleme)}` : 'Henüz kaydedilmedi');
+}
+
+async function kaydet() {
+  const v = formVerisi();
+  if (v.video && !/^https?:\/\//i.test(v.video)) return bildir('Video bağlantısı https:// ile başlamalı', 'h');
+  if (v.baglanti && !/^https?:\/\//i.test(v.baglanti)) return bildir('Dış bağlantı https:// ile başlamalı', 'h');
+  $('kaydet').disabled = true;
+  try {
+    D = await api('PUT', yol('sayfa'), v, ROL);
+    formuDoldur(); kontrolCiz();
+    bildir('Kaydedildi', 'o');
+  } catch (e) { bildir(e.message, 'h'); }
+  finally { $('kaydet').disabled = kilitli; }
+}
+$('kaydet').onclick = kaydet;
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); if (!kilitli) kaydet(); } });
+
+$('form').addEventListener('input', e => {
+  kirliYap(true);
+  if (e.target.matches('[maxlength]')) sayacGuncelle(document.querySelector(`.sayac[data-for="${e.target.id}"]`));
+  kontrolCiz();
+});
+function sayacGuncelle(s) { if (!s) return; const el = $(s.dataset.for); s.textContent = `${el.value.length} / ${el.maxLength}`; }
+window.addEventListener('beforeunload', e => { if (kirli) { e.preventDefault(); e.returnValue = ''; } });
+
+// ---- Dosyalar ----
+function dosyalariCiz() {
+  const s = D.sayfa;
+  const kk = $('kapakKutu');
+  kk.className = 'dosya-kutu' + (s.kapak ? ' dolu' : '');
+  kk.innerHTML = s.kapak
+    ? `<img class="kapak-on" src="${dosya(D.id, s.kapak)}" alt="Kapak"><div class="ad"><b>Kapak görseli yüklü</b><small>Değiştirmek için yeni görsel seçin ya da buraya sürükleyin.</small></div>
+       <div class="eylem"><button class="btn ghost sm" type="button" data-sec="secKapak">${ik('upload')} Değiştir</button><button class="btn danger sm" type="button" data-sil="kapak">${ik('trash-2')}</button></div>`
+    : `${ik('image')}<div class="ad"><b>Kapak görseli yok</b><small>Görseli seçin ya da buraya sürükleyin.</small></div>
+       <div class="eylem"><button class="btn sm" type="button" data-sec="secKapak">${ik('upload')} Görsel seç</button></div>`;
+
+  const ok = $('oyunKutu');
+  ok.className = 'dosya-kutu' + (s.oyun ? ' dolu' : '');
+  ok.innerHTML = s.oyun
+    ? `${ik('gamepad-2')}<div class="ad"><b>Web sürümü yüklü</b><small>${boyut(s.oyun.boyut)} · ${EJ.zaman(s.oyun.zaman)}</small></div>
+       <div class="eylem"><a class="btn sm" href="oyun/${encodeURIComponent(D.id)}" target="_blank">${ik('play')} Dene</a>
+       <button class="btn ghost sm" type="button" data-sec="secOyun">${ik('upload')} Yenisini yükle</button><button class="btn danger sm" type="button" data-sil="oyun">${ik('trash-2')}</button></div>`
+    : `${ik('package')}<div class="ad"><b>Web sürümü yok</b><small>index.html içeren ZIP dosyası, en fazla ${boyut(D.sinir.oyun)}</small></div>
+       <div class="eylem"><button class="btn sm" type="button" data-sec="secOyun">${ik('upload')} ZIP seç</button></div>`;
+  $('oyunBoyut').classList.toggle('hidden', !s.oyun);
+
+  const ik2 = $('indirKutu');
+  ik2.className = 'dosya-kutu' + (s.indir ? ' dolu' : '');
+  ik2.innerHTML = s.indir
+    ? `${ik('download')}<div class="ad"><b>${esc(s.indir.ad)}</b><small>${boyut(s.indir.boyut)} · ${EJ.zaman(s.indir.zaman)}</small></div>
+       <div class="eylem"><button class="btn ghost sm" type="button" data-sec="secIndir">${ik('upload')} Değiştir</button><button class="btn danger sm" type="button" data-sil="indir">${ik('trash-2')}</button></div>`
+    : `${ik('download')}<div class="ad"><b>İndirilebilir dosya yok</b><small>En fazla ${boyut(D.sinir.indir)}</small></div>
+       <div class="eylem"><button class="btn sm" type="button" data-sec="secIndir">${ik('upload')} Dosya seç</button></div>`;
+
+  const g = s.gorseller || [];
+  $('galeri').innerHTML = g.map((x, i) => `<div class="g"><img src="${dosya(D.id, x)}" alt="Ekran görüntüsü ${i + 1}">
+      <div class="eylem"><button type="button" data-tasi="${i}" data-yon="-1" ${i === 0 ? 'disabled' : ''} title="Sola">${ik('arrow-left')}</button>
+      <button type="button" data-tasi="${i}" data-yon="1" ${i === g.length - 1 ? 'disabled' : ''} title="Sağa">${ik('arrow-right')}</button>
+      <button type="button" data-sil="gorsel" data-ad="${esc(x)}" title="Sil">${ik('trash-2')}</button></div></div>`).join('')
+    + (g.length < D.sinir.maxGorsel ? `<button class="g ekle" type="button" data-sec="secGorsel">${ik('plus')} Görsel ekle</button>` : '');
+}
+
+document.addEventListener('click', async e => {
+  const sec = e.target.closest('[data-sec]');
+  if (sec && !kilitli) return $(sec.dataset.sec).click();
+  const sil = e.target.closest('[data-sil]');
+  if (sil && !kilitli) {
+    const ad = { kapak: 'kapak görselini', oyun: 'web sürümünü', indir: 'indirilebilir dosyayı', gorsel: 'bu ekran görüntüsünü' }[sil.dataset.sil];
+    if (!confirm(`${ad[0].toLocaleUpperCase('tr') + ad.slice(1)} silmek istediğinize emin misiniz?`)) return;
+    try {
+      const q = `tur=${sil.dataset.sil}` + (sil.dataset.ad ? `&ad=${encodeURIComponent(sil.dataset.ad)}` : '');
+      dosyaSonuc(await api('DELETE', yol('dosya', q), undefined, ROL));
+      bildir('Silindi', 'o');
+    } catch (err) { bildir(err.message, 'h'); }
+    return;
+  }
+  const tasi = e.target.closest('[data-tasi]');
+  if (tasi && !kilitli) {
+    const g = [...D.sayfa.gorseller], i = +tasi.dataset.tasi, j = i + +tasi.dataset.yon;
+    [g[i], g[j]] = [g[j], g[i]];
+    try { dosyaSonuc(await api('PUT', yol('gorsel-sira'), { sira: g }, ROL)); } catch (err) { bildir(err.message, 'h'); }
+  }
+});
+
+// Yükleme sonrası yalnızca dosya bilgileri güncellenir, formdaki kaydedilmemiş metinler korunur
+function dosyaSonuc(yeni) {
+  D = { ...yeni, sayfa: { ...yeni.sayfa } };
+  dosyalariCiz(); kontrolCiz();
+  $('kaydetDurum').textContent = kirli ? 'Kaydedilmemiş değişiklikler var' : `Son kayıt: ${EJ.zaman(D.guncelleme)}`;
+}
+
+// Kapak ve ekran görüntüleri yüklemeden önce tarayıcıda küçültülür (en çok 1280 px, WEBP).
+// Telefon fotoğrafı gibi büyük görseller 3-8 MB yerine ~100-300 KB olur; vitrin hızlı açılır, sunucu bant genişliği korunur.
+// GIF'ler (animasyon bozulmasın) ve zaten küçük olanlar olduğu gibi gönderilir.
+async function kucult(f) {
+  if (!/^image\/(png|jpeg|webp)$/.test(f.type) || typeof createImageBitmap !== 'function') return f;
+  try {
+    const bmp = await createImageBitmap(f);
+    const oran = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
+    if (oran === 1 && f.size < 400 * 1024) { bmp.close(); return f; }
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * oran); c.height = Math.round(bmp.height * oran);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close();
+    const blob = await new Promise(r => c.toBlob(r, 'image/webp', .86));
+    if (!blob || blob.type !== 'image/webp' || blob.size >= f.size) return f;
+    return new File([blob], f.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+  } catch { return f; }
+}
+
+async function yukleDosya(tur, f, kutu) {
+  if (tur === 'kapak' || tur === 'gorsel') f = await kucult(f);
+  const sinir = tur === 'oyun' ? D.sinir.oyun : tur === 'indir' ? D.sinir.indir : D.sinir.gorsel;
+  if (f.size > sinir) return bildir(`${f.name}: dosya en fazla ${boyut(sinir)} olabilir`, 'h');
+  let cubuk = kutu.querySelector('.cubuk');
+  if (!cubuk) { cubuk = document.createElement('div'); cubuk.className = 'cubuk'; cubuk.innerHTML = '<i></i>'; kutu.appendChild(cubuk); }
+  cubuk.classList.remove('hidden');
+  const ad = kutu.querySelector('.ad small');
+  if (ad) ad.textContent = `${f.name} yükleniyor…`;
+  kutu.querySelectorAll('button').forEach(b => b.disabled = true);
+  try {
+    const d = await EJ.yukle(yol('yukle', `tur=${tur}&ad=${encodeURIComponent(f.name)}`), f, ROL, p => {
+      cubuk.firstElementChild.style.width = (p * 100).toFixed(1) + '%';
+      if (ad) ad.textContent = p < 1 ? `${f.name} yükleniyor… %${Math.floor(p * 100)}` : (tur === 'oyun' ? 'ZIP açılıyor ve kontrol ediliyor…' : 'Kaydediliyor…');
+    });
+    dosyaSonuc(d);
+    bildir(tur === 'oyun' ? 'Web sürümü yüklendi. "Dene" ile kontrol edin.' : 'Yüklendi', 'o');
+    return true;
+  } catch (err) {
+    bildir(err.message, 'h');
+    dosyalariCiz();
+    return false;
+  }
+}
+
+$('secKapak').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) yukleDosya('kapak', f, $('kapakKutu')); };
+$('secOyun').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) yukleDosya('oyun', f, $('oyunKutu')); };
+$('secIndir').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) yukleDosya('indir', f, $('indirKutu')); };
+$('secGorsel').onchange = async e => {
+  const fs = [...e.target.files]; e.target.value = '';
+  const bos = D.sinir.maxGorsel - (D.sayfa.gorseller || []).length;
+  if (fs.length > bos) bildir(`En fazla ${bos} görsel daha eklenebilir; ilk ${bos} tanesi yükleniyor`, 'h');
+  // İlerleme çubuğu galerinin altındaki #galeriCubuk; yükleme sırasında bölümdeki düğmeler kilitlenir
+  const cubuk = $('galeriCubuk');
+  for (const f of fs.slice(0, bos)) {
+    cubuk.firstElementChild.style.width = '0';
+    if (!await yukleDosya('gorsel', f, cubuk.parentElement)) break;
+  }
+  cubuk.classList.add('hidden');
+};
+
+// Sürükle bırak
+for (const [kutuId, tur] of [['kapakKutu', 'kapak'], ['oyunKutu', 'oyun'], ['indirKutu', 'indir']]) {
+  const k = $(kutuId);
+  k.addEventListener('dragover', e => { if (kilitli) return; e.preventDefault(); k.classList.add('surukle'); });
+  k.addEventListener('dragleave', () => k.classList.remove('surukle'));
+  k.addEventListener('drop', e => {
+    e.preventDefault(); k.classList.remove('surukle');
+    const f = e.dataTransfer.files[0];
+    if (f && !kilitli) yukleDosya(tur, f, k);
+  });
+}
+
+// ---- Kontrol listesi (kurallardaki zorunlu içerik) ----
+function kontrolCiz() {
+  const s = D.sayfa, v = formVerisi();
+  const madde = [
+    ['Oyunun adı', !!v.baslik.trim()],
+    ['Kısa tanıtım', !!v.kisa.trim()],
+    ['Kapak görseli', !!s.kapak],
+    ['Oyun dosyası (web ya da indirme)', !!(s.oyun || s.indir)],
+    ['Tanıtım metni', v.aciklama.trim().length >= 40, 'en az birkaç cümle'],
+    ['Ekip üyeleri ve görevleri', v.uyeler.length > 0 && v.uyeler.every(u => u.rol.trim())],
+    ['Oynanış videosu', !!v.video],
+    ['Ekran görüntüsü', (s.gorseller || []).length > 0],
+    ['Hazır içerik / YZ beyanı', !!v.krediler.trim()]
+  ];
+  const tamam = madde.filter(m => m[1]).length;
+  $('kontrol').innerHTML = `<li style="padding-bottom:10px"><b>${tamam} / ${madde.length} tamam</b></li>` + madde.map(([ad, ok, not]) =>
+    `<li class="${ok ? 'ok' : ''}"><span class="d">${ok ? ik('check') : ''}</span><span>${ad}${!ok && not ? ` <small>(${not})</small>` : ''}</span></li>`).join('');
+}
+
+// ---- Giriş / çıkış / şifre ----
+$('girisForm').onsubmit = async e => {
+  e.preventDefault();
+  $('gHata').textContent = '';
+  try {
+    const d = await api('POST', 'api/takim/giris', { kullanici: $('gKul').value, sifre: $('gSif').value });
+    EJ.jetonYaz('takim', d.token);
+    $('gSif').value = '';
+    basla();
+  } catch (err) { $('gHata').textContent = err.message; }
+};
+$('cikis').onclick = async e => {
+  e.preventDefault();
+  if (kirli && !confirm('Kaydedilmemiş değişiklikler kaybolacak. Devam edilsin mi?')) return;
+  kirli = false;
+  if (yoneticiTakim) { location.href = PANEL; return; }
+  try { await api('POST', 'api/takim/cikis', {}, 'takim'); } catch {}
+  EJ.jetonYaz('takim', null);
+  location.reload();
+};
+$('sifreAc').onclick = e => { e.preventDefault(); $('sifrePencere').classList.remove('hidden'); $('sEski').focus(); };
+document.querySelectorAll('[data-kapat]').forEach(b => b.onclick = () => $('sifrePencere').classList.add('hidden'));
+$('sifreForm').onsubmit = async e => {
+  e.preventDefault(); $('sHata').textContent = '';
+  try {
+    await api('PUT', 'api/takim/sifre', { eski: $('sEski').value, yeni: $('sYeni').value }, 'takim');
+    $('sifrePencere').classList.add('hidden'); $('sEski').value = $('sYeni').value = '';
+    bildir('Şifreniz değiştirildi', 'o');
+  } catch (err) { $('sHata').textContent = err.message; }
+};
+
+basla();
+</script>
+</body>
+</html>
