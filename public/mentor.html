@@ -142,7 +142,8 @@ async function yenile(veri) {
   EJ.marka(D.event.ad);
   $('oturumAd').innerHTML = `${ik('graduation-cap')}${esc(D.ben.ad)}`;
   $('mentorAlt').textContent = [D.ben.alan, D.takimlar[0] ? `Takımı: ${D.takimlar[0].ad}` : 'Takımı yok', D.event.ad].filter(Boolean).join(' · ');
-  $('uyari').innerHTML = D.teslimAcik ? '' : `<div class="bilgi u" style="margin-bottom:16px">${ik('lock')} Teslim süresi doldu; takım sayfaları artık düzenlenemez.</div>`;
+  $('uyari').innerHTML = (D.teslimAcik ? '' : `<div class="bilgi u" style="margin-bottom:16px">${ik('lock')} Teslim süresi doldu; takım sayfaları artık düzenlenemez.</div>`)
+    + (D.takimlar.length ? `<div class="bilgi k" style="margin-bottom:16px">${ik('users')} Her mentörün tek takımı olur; bu yüzden yeni takım kurma düğmesi yalnızca takımı olmayan mentörlerde görünür. Takımınızın adını ve bilgilerini <b>Takım bilgileri</b> ile değiştirebilirsiniz. Öğrencileriniz takıma <b>katılım koduyla</b> katılır. Takımı silmek ya da başka takıma geçmek için yönetime başvurun.</div>` : '');
   listeCiz();
   if (!window.sayacDur) window.sayacDur = EJ.geriSayim($('mentorSayac'), D.event, D.simdi, { kisa: true, once: 'Etkinliğin başlamasına', sure: 'Teslime kalan' });
   if (!sohbet) {
