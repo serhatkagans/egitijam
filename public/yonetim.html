@@ -214,11 +214,11 @@
             <button class="btn ghost" type="button" id="mToplu"><svg class="ik"><use href="ikonlar.svg#upload"/></svg> Toplu ekle</button>
           </div>
           <div class="tablo-kap"><table>
-            <thead><tr><th>Mentör</th><th>Uzmanlık</th><th>Takımları</th><th>Oturum</th><th></th></tr></thead>
+            <thead><tr><th>Mentör</th><th>Uzmanlık</th><th>Takımı</th><th>Oturum</th><th></th></tr></thead>
             <tbody id="mTablo"></tbody>
           </table></div>
-          <div class="bayrak" style="margin-top:12px;border-top:1px solid var(--line)"><div><b>Mentörler takım ekleyebilir</b><p>Açıksa mentörler (ör. danışman öğretmenler) kendi takımlarını oluşturur ve şifrelerini kendileri alır. Kapalıysa takımları yönetim ekler ve atar.</p></div>
-            <label class="anahtar"><input type="checkbox" data-bayrak="mentorKayit"><span class="sr">Mentörler takım ekleyebilir</span></label></div>
+          <div class="bayrak" style="margin-top:12px;border-top:1px solid var(--line)"><div><b>Mentörler kendi takımını kurabilir</b><p>Her mentörün tek takımı olur. Açıksa takımı olmayan mentör panelinden takımını kurar. Kapalıysa takımları yönetim ekler ve mentöre atar.</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="mentorTakimKur"><span class="sr">Mentörler kendi takımını kurabilir</span></label></div>
         </div>
       </section>
 
@@ -423,7 +423,7 @@
       <div><label class="l" for="mpAlan">Uzmanlık <small>(ör. Programlama, Görsel tasarım)</small></label><input type="text" id="mpAlan" maxlength="80"></div>
     </div>
     <div id="mpKulAlan"><label class="l" for="mpKul">Kullanıcı adı <small>(boşsa addan üretilir)</small></label><input type="text" id="mpKul" maxlength="30" autocapitalize="none"></div>
-    <label class="l">Atanan takımlar <small id="mpSay"></small></label>
+    <label class="l">Takımı <small id="mpSay"></small></label>
     <input type="search" id="mpAra" placeholder="Takım ara" aria-label="Takım ara">
     <div id="mpTakimlar" style="max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:8px;padding:4px 10px"></div>
     <div class="hata" id="mpHata"></div>
@@ -773,7 +773,7 @@ function mentorCiz() {
   $('mTablo').innerHTML = l.length ? l.map(m => `<tr>
     <td><b>${esc(m.ad)}</b><small>${esc(m.id)}</small></td>
     <td>${esc(m.alan) || '<small>—</small>'}</td>
-    <td>${m.takimlar.length ? `<b>${m.takimlar.length}</b><small>${esc(m.takimlar.slice(0, 4).map(ad).join(', '))}${m.takimlar.length > 4 ? ' …' : ''}</small>` : '<small>Atanmadı</small>'}</td>
+    <td>${m.takimlar.length ? `<b>${esc(ad(m.takimlar[0]))}</b><small>${esc(m.takimlar[0])}</small>` : '<small style="color:var(--warn)">Takımı yok</small>'}</td>
     <td>${m.oturum ? `<button class="btn ghost sm" type="button" data-moturum="${esc(m.id)}" title="Oturumunu kapat">${ik('log-out')} ${m.oturum}</button>` : '<small>—</small>'}</td>
     <td><div class="islem">
       <button class="ikbtn" type="button" data-mduzen="${esc(m.id)}" title="Bilgiler ve takım ataması">${ik('pencil')}</button>
@@ -782,10 +782,10 @@ function mentorCiz() {
     </div></td></tr>`).join('') : `<tr><td colspan="5" class="bos">${D.mentors.length ? 'Eşleşen mentör yok' : 'Henüz mentör yok. "Mentör ekle" ya da "Toplu ekle" ile başlayın.'}</td></tr>`;
 }
 $('mAra').oninput = mentorCiz;
-let mDuzen = null, mSecili = new Set();
+let mDuzen = null, mSecili = ''; // mentörün takımı ('' ise takımsız)
 function mentorPenceresi(m) {
   mDuzen = m || null;
-  mSecili = new Set(m ? m.takimlar : []);
+  mSecili = m?.takimlar[0] || '';
   $('mpBaslik').textContent = m ? 'Mentör bilgileri' : 'Mentör ekle';
   $('mpAd').value = m?.ad || ''; $('mpAlan').value = m?.alan || ''; $('mpKul').value = '';
   $('mpKulAlan').classList.toggle('hidden', !!m);
@@ -798,19 +798,21 @@ function mpTakimCiz() {
   const baskasi = {};
   for (const m of D.mentors) if (m.id !== mDuzen?.id) for (const t of m.takimlar) (baskasi[t] ||= []).push(m.ad);
   const l = D.teams.filter(t => !q || [t.ad, t.id, t.il, t.okul, t.danisman].join(' ').toLocaleLowerCase('tr').includes(q));
-  $('mpTakimlar').innerHTML = l.length ? l.map(t => `<label style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer">
-    <input type="checkbox" data-mt="${esc(t.id)}" ${mSecili.has(t.id) ? 'checked' : ''}>
-    <span style="flex:1;min-width:0"><b>${esc(t.ad)}</b> <small style="color:var(--muted)">${esc([t.il, t.okul].filter(Boolean).join(' · '))}</small>
-    ${baskasi[t.id] ? `<br><small style="color:var(--muted)">Mentörü: ${esc(baskasi[t.id].join(', '))}</small>` : ''}</span></label>`).join('')
-    : `<p class="bos" style="padding:16px">${D.teams.length ? 'Eşleşen takım yok' : 'Henüz takım yok'}</p>`;
-  $('mpSay').textContent = `(${mSecili.size} seçili)`;
+  const satir = (id, icerik) => `<label style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer">
+    <input type="radio" name="mpTakim" data-mt="${esc(id)}" ${mSecili === id ? 'checked' : ''}><span style="flex:1;min-width:0">${icerik}</span></label>`;
+  $('mpTakimlar').innerHTML = (q ? '' : satir('', '<b>— Takımı yok —</b>')) + (l.length ? l.map(t => satir(t.id,
+    `<b>${esc(t.ad)}</b> <small style="color:var(--muted)">${esc([t.il, t.okul].filter(Boolean).join(' · '))}</small>
+    ${baskasi[t.id] ? `<br><small style="color:var(--warn)">Mentörü: ${esc(baskasi[t.id].join(', '))} — seçerseniz o mentör takımsız kalır</small>` : ''}`)).join('')
+    : `<p class="bos" style="padding:16px">${D.teams.length ? 'Eşleşen takım yok' : 'Henüz takım yok'}</p>`);
+  mpSayYaz();
 }
 $('mpAra').oninput = mpTakimCiz;
-$('mpTakimlar').onchange = e => { const c = e.target.closest('[data-mt]'); if (!c) return; c.checked ? mSecili.add(c.dataset.mt) : mSecili.delete(c.dataset.mt); $('mpSay').textContent = `(${mSecili.size} seçili)`; };
+function mpSayYaz() { $('mpSay').textContent = `(her mentörün tek takımı olur${mSecili ? ': ' + (D.teams.find(t => t.id === mSecili)?.ad || mSecili) : ''})`; }
+$('mpTakimlar').onchange = e => { const c = e.target.closest('[data-mt]'); if (!c) return; mSecili = c.dataset.mt; mpSayYaz(); };
 $('mEkle').onclick = () => mentorPenceresi(null);
 $('mentorForm').onsubmit = async e => {
   e.preventDefault(); $('mpHata').textContent = '';
-  const v = { ad: $('mpAd').value, alan: $('mpAlan').value, takimlar: [...mSecili] };
+  const v = { ad: $('mpAd').value, alan: $('mpAlan').value, takim: mSecili };
   try {
     if (mDuzen) { await yenile(await A('PUT', 'mentor', { ...v, id: mDuzen.id })); bildir('Kaydedildi', 'o'); }
     else { const d = await A('POST', 'mentor', { ...v, kullanici: $('mpKul').value }); await yenile(d); sifreleriGoster(d.yeni, 'mentor'); }

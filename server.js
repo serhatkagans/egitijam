@@ -99,7 +99,7 @@ const DEFAULTS = {
   teslimAcik: true,    // takımlar sayfalarını düzenleyebilir / dosya yükleyebilir
   oylamaAcik: false,   // jüriler puan verebilir
   sonuclarAcik: false, // ödüller vitrinde görünür
-  mentorKayit: false,  // mentörler kendi takımlarını oluşturabilir
+  mentorTakimKur: true, // takımı olmayan mentör kendi takımını kurabilir (her mentörün tek takımı olur)
   ogrenciKayit: true,  // öğrenciler kendi hesabını açıp katılım koduyla takıma katılabilir
   ogrenciTakim: true,  // öğrenciler yeni takım kurabilir (kapalıysa yalnızca yönetimin/mentörün açtığı takımlara katılır)
   genelSohbet: true,   // Genel sohbet kanalına takımlar ve mentörler yazabilir (kapalıysa yalnızca okur)
@@ -235,6 +235,13 @@ CREATE TABLE IF NOT EXISTS geribildirimler (juri TEXT NOT NULL, takim TEXT NOT N
 // Eski veritabanı: takımların katılım kodu yoksa eklenir (kodlar aşağıda, takım sorgularından sonra üretilir)
 if (!db.prepare('PRAGMA table_info(takimlar)').all().some(c => c.name === 'kod')) db.exec('ALTER TABLE takimlar ADD COLUMN kod TEXT');
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS takimlar_kod ON takimlar (kod)');
+// Her mentörün tek takımı, her takımın tek mentörü olur. Eski çoklu atamalarda ilk yapılan atama kalır.
+if (!db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'mentor_takim_mentor'").get()) {
+  db.exec(`DELETE FROM mentor_takim WHERE rowid NOT IN (SELECT MIN(rowid) FROM mentor_takim GROUP BY mentor);
+    DELETE FROM mentor_takim WHERE rowid NOT IN (SELECT MIN(rowid) FROM mentor_takim GROUP BY takim);
+    CREATE UNIQUE INDEX mentor_takim_mentor ON mentor_takim (mentor);
+    CREATE UNIQUE INDEX IF NOT EXISTS mentor_takim_takim ON mentor_takim (takim);`);
+}
 
 // Eski veritabanı: oylar tablosunda aşama sütunu yoksa tablo yeniden kurulur, oylar ön eleme sayılır
 if (!db.prepare('PRAGMA table_info(oylar)').all().some(c => c.name === 'tur')) {
@@ -482,7 +489,8 @@ const MQ = {
   teamsOf: db.prepare('SELECT takim FROM mentor_takim WHERE mentor = ?'),
   assignments: db.prepare('SELECT * FROM mentor_takim'),
   assigned: db.prepare('SELECT 1 FROM mentor_takim WHERE mentor = ? AND takim = ?'),
-  assign: db.prepare('INSERT OR IGNORE INTO mentor_takim (mentor, takim) VALUES (?, ?)'),
+  // Birebir atama: mentörün eski takımı ve takımın eski mentörü bırakılır
+  assign: { run: (mentor, takim) => { db.prepare('DELETE FROM mentor_takim WHERE mentor = ? OR takim = ?').run(mentor, takim); db.prepare('INSERT INTO mentor_takim (mentor, takim) VALUES (?, ?)').run(mentor, takim); } },
   unassignAll: db.prepare('DELETE FROM mentor_takim WHERE mentor = ?')
 };
 function getMentor(id) {
@@ -511,16 +519,19 @@ async function createMentorsBulk(text) {
   const pw = await passwordsFor(lines.length);
   return tx(() => lines.map((l, i) => { const [ad, alan] = l.split(/\t|;/).map(s => s.trim()); return createMentor({ ad, alan }, pw[i]); }));
 }
-function updateMentor({ id, ad, alan, takimlar }) {
+// takim: mentörün takımı ('' ise takımsız). Eski istemciler için takimlar dizisinin ilk öğesi de kabul edilir.
+function updateMentor({ id, ad, alan, takim, takimlar }) {
   const row = getMentor(id);
   ad = str(ad, 80);
   if (!ad) fail(400, 'Mentör adı boş bırakılamaz');
+  if (takim === undefined && Array.isArray(takimlar)) {
+    if (takimlar.length > 1) fail(400, 'Her mentörün tek takımı olur');
+    takim = takimlar[0] || '';
+  }
+  if (takim) getTeam(takim);
   tx(() => {
     MQ.update.run(ad, str(alan, 80), row.id);
-    if (Array.isArray(takimlar)) {
-      MQ.unassignAll.run(row.id);
-      for (const t of takimlar) if (typeof t === 'string' && Q.team.get(t)) MQ.assign.run(row.id, t);
-    }
+    if (takim !== undefined) { MQ.unassignAll.run(row.id); if (takim) MQ.assign.run(row.id, takim); }
   });
 }
 function removeMentor(id) {
@@ -1782,7 +1793,7 @@ function adminState() {
   for (const a of MQ.assignments.all()) { (byMentor[a.mentor] ||= []).push(a.takim); (byTeam[a.takim] ||= []).push(a.mentor); }
   return {
     event: CFG.event, criteria: CFG.criteria, maxTotals: maxTotals(), tema: CFG.tema,
-    teslimAcik: CFG.teslimAcik, oylamaAcik: CFG.oylamaAcik, sonuclarAcik: CFG.sonuclarAcik, mentorKayit: CFG.mentorKayit, genelSohbet: CFG.genelSohbet,
+    teslimAcik: CFG.teslimAcik, oylamaAcik: CFG.oylamaAcik, sonuclarAcik: CFG.sonuclarAcik, mentorTakimKur: CFG.mentorTakimKur, genelSohbet: CFG.genelSohbet,
     ogrenciKayit: CFG.ogrenciKayit, ogrenciTakim: CFG.ogrenciTakim, maxOgrenci: MAX_OGRENCI,
     ogrenciler: OQ.all.all().map(o => ({ id: o.id, ad: o.ad, takim: o.takim, kaptan: !!o.kaptan, olusturma: o.olusturma, oturum: sessions[`s:${o.id}`] || 0 })),
     temaGizle: CFG.temaGizle, temaGizli: temaGizli(), geriBildirimAcik: CFG.geriBildirimAcik, yasakKelimeler: CFG.yasakKelimeler,
@@ -1811,7 +1822,7 @@ function adminState() {
 function backup() {
   return {
     tur: 'egitijam-yedek', zaman: new Date().toISOString(),
-    ayarlar: { event: CFG.event, juries: CFG.juries, criteria: CFG.criteria, teslimAcik: CFG.teslimAcik, oylamaAcik: CFG.oylamaAcik, sonuclarAcik: CFG.sonuclarAcik, mentorKayit: CFG.mentorKayit, genelSohbet: CFG.genelSohbet, temaGizle: CFG.temaGizle, geriBildirimAcik: CFG.geriBildirimAcik, yasakKelimeler: CFG.yasakKelimeler, tema: CFG.tema,
+    ayarlar: { event: CFG.event, juries: CFG.juries, criteria: CFG.criteria, teslimAcik: CFG.teslimAcik, oylamaAcik: CFG.oylamaAcik, sonuclarAcik: CFG.sonuclarAcik, mentorTakimKur: CFG.mentorTakimKur, genelSohbet: CFG.genelSohbet, temaGizle: CFG.temaGizle, geriBildirimAcik: CFG.geriBildirimAcik, yasakKelimeler: CFG.yasakKelimeler, tema: CFG.tema,
       ogrenciKayit: CFG.ogrenciKayit, ogrenciTakim: CFG.ogrenciTakim,
       odalar: CFG.odalar, asama: CFG.asama, finalistler: CFG.finalistler, finalSayi: CFG.finalSayi },
     odaTakim: Q.rooms.all(),
@@ -1838,7 +1849,7 @@ function restore(b) {
       setEvent(a.event || {});
       setJuries(Array.isArray(a.juries) ? a.juries : []);
       setCriteria(a.criteria);
-      CFG.teslimAcik = a.teslimAcik !== false; CFG.oylamaAcik = !!a.oylamaAcik; CFG.sonuclarAcik = !!a.sonuclarAcik; CFG.mentorKayit = !!a.mentorKayit; CFG.genelSohbet = a.genelSohbet !== false;
+      CFG.teslimAcik = a.teslimAcik !== false; CFG.oylamaAcik = !!a.oylamaAcik; CFG.sonuclarAcik = !!a.sonuclarAcik; CFG.mentorTakimKur = a.mentorTakimKur !== false; CFG.genelSohbet = a.genelSohbet !== false;
       CFG.ogrenciKayit = a.ogrenciKayit !== false; CFG.ogrenciTakim = a.ogrenciTakim !== false;
       CFG.temaGizle = a.temaGizle !== false; CFG.geriBildirimAcik = !!a.geriBildirimAcik; CFG.yasakKelimeler = kelimeListesi(a.yasakKelimeler);
       CFG.asama = a.asama === 'final' && CFG.odalar.length ? 'final' : 'on';
@@ -1959,7 +1970,7 @@ async function adminRoutes(req, res, url) {
   else if (m === 'PUT' && p === 'sifre') await setPassword(await readBody(req));
   else if (m === 'PUT' && p === 'bayraklar') {
     const b = await readBody(req);
-    for (const k of ['teslimAcik', 'oylamaAcik', 'sonuclarAcik', 'mentorKayit', 'genelSohbet', 'temaGizle', 'geriBildirimAcik', 'ogrenciKayit', 'ogrenciTakim']) if (k in b) CFG[k] = !!b[k];
+    for (const k of ['teslimAcik', 'oylamaAcik', 'sonuclarAcik', 'mentorTakimKur', 'genelSohbet', 'temaGizle', 'geriBildirimAcik', 'ogrenciKayit', 'ogrenciTakim']) if (k in b) CFG[k] = !!b[k];
     if ('yasakKelimeler' in b) CFG.yasakKelimeler = kelimeListesi(b.yasakKelimeler);
     if ('asama' in b) {
       if (!['on', 'final'].includes(b.asama)) fail(400, 'Geçersiz aşama');
@@ -1990,7 +2001,7 @@ async function adminRoutes(req, res, url) {
     removeTeam(url.searchParams.get('id'));
   } else if (m === 'POST' && p === 'mentor') {
     const b = await readBody(req);
-    const yeni = tx(() => { const r = createMentor(b); if (Array.isArray(b.takimlar)) updateMentor({ ...r, takimlar: b.takimlar }); return r; });
+    const yeni = tx(() => { const r = createMentor(b); if (b.takim !== undefined || Array.isArray(b.takimlar)) updateMentor({ ...r, takim: b.takim, takimlar: b.takimlar }); return r; });
     extra.yeni = [yeni];
   } else if (m === 'POST' && p === 'mentorler') {
     extra.yeni = await createMentorsBulk((await readBody(req, 1e6)).metin);
@@ -2183,7 +2194,7 @@ function mentorState(mentor) {
   const ids = new Set(mentorTeams(mentor.id));
   return {
     ben: { id: mentor.id, ad: mentor.ad, alan: mentor.alan },
-    event: pubEvent(), tema: CFG.tema, teslimAcik: CFG.teslimAcik, mentorKayit: CFG.mentorKayit, simdi: Date.now(), maxOgrenci: MAX_OGRENCI,
+    event: pubEvent(), tema: CFG.tema, teslimAcik: CFG.teslimAcik, mentorTakimKur: CFG.mentorTakimKur, simdi: Date.now(), maxOgrenci: MAX_OGRENCI,
     takimSayisi: Q.teams.all().length,
     takimlar: Q.teams.all().filter(r => ids.has(r.id)).map(row => {
       const p = pageOf(row);
@@ -2214,8 +2225,8 @@ async function mentorRoutes(req, res, url) {
 
   let extra = {};
   if (m === 'POST' && p === 'takim') {
-    if (!CFG.mentorKayit) fail(403, 'Takımları yönetim ekliyor; mentörlerin takım eklemesi kapalı');
-    if (mentorTeams(mentor.id).length >= 30) fail(400, 'Bir mentör en fazla 30 takım ekleyebilir');
+    if (mentorTeams(mentor.id).length) fail(409, 'Zaten bir takımınız var; her mentörün tek takımı olur');
+    if (!CFG.mentorTakimKur) fail(403, 'Takımları yönetim kuruyor; mentörlerin takım kurması kapalı');
     const b = await readBody(req);
     const t = tx(() => { const t = createTeam({ ad: b.ad, il: b.il, okul: b.okul, danisman: b.danisman || mentor.ad }); MQ.assign.run(mentor.id, t.id); return t; });
     extra.yeni = [t];

@@ -35,9 +35,9 @@ Yapı ve görsel dil `../jürigenctek` uygulamasıyla aynıdır (GençTek kırm�
    yapıştırın. Kullanıcı adları ve şifreler üretilir. Şifreler **yalnızca bir kez** gösterilir;
    CSV olarak indirip danışman öğretmenlere iletin. Kaybolan şifre "Şifre sıfırla" ile yenilenir.
    CSV'de her takımın **öğrenci katılım kodu** da vardır.
-   **Mentör atayın:** Yönetim → Mentörler'de mentörün takımlarını seçin. Takımlar tablosunda mentörü
+   **Mentör atayın:** Her mentörün tek takımı, her takımın tek mentörü olur. Yönetim → Mentörler'de mentörün takımını seçin (başka mentörü olan takım seçilirse o mentör takımsız kalır). Takımı olmayan mentör, mentör panelinden **Takımını kur** ile kendi takımını da kurabilir. Takımlar tablosunda mentörü
    olmayan takım "Mentör atanmadı" diye işaretlenir ("Mentörü atanmamış" süzgeci ile listelenir).
-   Takım panelinde "Mentörleriniz" kartı, mentör panelinde "Takımlarım" listesi atamayı gösterir.
+   Takım panelinde "Mentörünüz" kartı, mentör panelinde "Takımım" sayfası atamayı gösterir.
 2. **Öğrenciler takımda toplanır** (`/takim`): her öğrenci "Kayıt ol" ile kendi hesabını açar.
    Bir öğrenci takımı kurar (kaptan olur) ya da yönetimin/mentörün açtığı takımın kodunu girer;
    diğerleri aynı **katılım koduyla** (ör. `K7M-Q2X`) katılır. Takım başına en fazla 5 öğrenci.
@@ -98,8 +98,8 @@ Discord yerine platformun kendi mesajlaşması kullanılır (takım, mentör, j�
   "Yardım bekleyenler" grubuna çıkar; bir mentör ya da yönetim yanıt verince oradan düşer.
 - Okunmamış mesaj sayısı üst menüde ve sekme başlığında görünür. Yeni mesajlar birkaç saniyede
   bir kendiliğinden gelir.
-- **Mentörler takım ekleyebilir** anahtarı açılırsa (Yönetim → Mentörler) danışman öğretmenler
-  kendi takımlarını oluşturur; takım otomatik olarak onlara atanır.
+- **Mentörler kendi takımını kurabilir** anahtarı açıksa (varsayılan; Yönetim → Mentörler) takımı olmayan mentör
+  panelinden tek takımını kurar; takım otomatik olarak ona atanır.
 - Herkes kendi mesajını, yönetici tüm mesajları silebilir.
 
 Discord'daki gibi kullanım:
