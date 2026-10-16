@@ -41,6 +41,7 @@ Yapı ve görsel dil `../jürigenctek` uygulamasıyla aynıdır (GençTek kırm�
 2. **Öğrenciler takımda toplanır** (`/takim`): her öğrenci "Kayıt ol" ile kendi hesabını açar.
    Bir öğrenci takımı kurar (kaptan olur) ya da yönetimin/mentörün açtığı takımın kodunu girer;
    diğerleri aynı **katılım koduyla** (ör. `K7M-Q2X`) katılır. Takım başına en fazla 5 öğrenci.
+   Öğrenci giriş ekranındaki **"Takıma katılacak mısın?"** kutusuna kodu girer, kayıt olur ya da giriş yapar ve takıma kendiliğinden katılır.
    Kod, takım panelindeki **Ekip** kartında görünür; `/takim?kod=K7MQ2X` bağlantısı kodu hazır doldurur.
    Kaptan, mentör ve yönetim ekipten öğrenci çıkarabilir, kaptanlığı devredebilir, kodu yenileyebilir;
    unutulan öğrenci şifresini mentör ya da yönetim sıfırlar. Yönetim → Takımlar → **Öğrenciler**

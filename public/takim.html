@@ -71,6 +71,9 @@
   .giris .ayrac { display: flex; align-items: center; gap: 10px; margin: 20px 0 4px; color: var(--muted); font-size: 13px; }
   .giris .ayrac::before, .giris .ayrac::after { content: ''; flex: 1; border-top: 1px solid var(--line); }
   .giris .kod-gir { text-transform: uppercase; letter-spacing: .18em; font-weight: 700; text-align: center; font-size: 18px; }
+  .giris .kod-giris { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); text-align: left; }
+  .giris .kod-giris .kod-gir { font-size: 16px; }
+  .giris .kod-giris .l { margin-top: 0; }
   .kod-kutu { display: flex; align-items: center; gap: 6px; background: var(--panel2); border-radius: var(--yaricap-kutu); padding: 8px 10px; }
   .kod-kutu small { color: var(--muted); font-size: 12px; }
   .kod-kutu b { font-size: 18px; letter-spacing: .14em; font-family: ui-monospace, Consolas, monospace; }
@@ -91,9 +94,16 @@
 <div id="girisEkran" class="giris hidden">
   <form class="kart" id="girisForm">
     <img class="logo" src="genc.png" alt="">
-    <h1>Takım girişi</h1>
-    <p class="alt">Kendi öğrenci hesabınla giriş yap. Takımın ortak hesabıyla da girebilirsin.</p>
+    <h1>Öğrenci girişi</h1>
+    <div class="kod-giris" id="kodKutu">
+      <label class="l" for="gKod" style="margin-top:0">Takıma katılacak mısın?</label>
+      <p class="alt" style="text-align:left;margin:0 0 6px">Takım arkadaşının ya da mentörünün verdiği <b>katılım kodunu</b> gir.</p>
+      <div style="display:flex;gap:8px"><input type="text" id="gKod" class="kod-gir" maxlength="9" placeholder="K7M-Q2X" autocomplete="off" autocapitalize="characters" aria-label="Katılım kodu" style="flex:1;min-width:0">
+        <button class="btn" type="button" id="gKodBtn" style="margin:0;width:auto">Devam</button></div>
+      <div class="hata" id="gKodHata" role="alert"></div>
+    </div>
     <div class="bilgi k hidden" id="gKodBilgi" style="margin-top:10px"></div>
+    <p class="alt" id="gAlt">Hesabın varsa giriş yap. Takımın ortak hesabıyla da girebilirsin.</p>
     <label class="l" for="gKul">Kullanıcı adı</label>
     <input type="text" id="gKul" autocomplete="username" autocapitalize="none" required>
     <label class="l" for="gSif">Şifre</label>
@@ -106,6 +116,7 @@
   <form class="kart hidden" id="kayitForm">
     <img class="logo" src="genc.png" alt="">
     <h1>Öğrenci kaydı</h1>
+    <div class="bilgi k hidden" id="kKodBilgi" style="margin-top:10px"></div>
     <p class="alt">Her öğrenci kendi hesabını açar. Sonra takımını kurarsın ya da takım arkadaşının paylaştığı katılım koduyla takıma katılırsın.</p>
     <label class="l" for="kAd">Adın ve soyadın <small>(takım sayfasında ve mesajlarda görünür)</small></label>
     <input type="text" id="kAd" maxlength="60" autocomplete="name" required>
@@ -322,7 +333,9 @@ const ROL = yoneticiTakim ? (PARAM.get('rol') === 'mentor' ? 'mentor' : 'yonetim
 const PANEL = ROL === 'mentor' ? 'mentor' : 'yonetim';
 const ek = yoneticiTakim ? `takim=${encodeURIComponent(yoneticiTakim)}` : '';
 // Katılım bağlantısı: /takim?kod=K7MQ2X (giriş/kayıttan sonra kod kutusu dolu gelir)
-const DAVET = (PARAM.get('kod') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+// Giriş ekranında kod girilirse de aynı yol izlenir: giriş/kayıttan sonra takıma kendiliğinden katılır
+let DAVET = (PARAM.get('kod') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+let davetDenendi = false;
 const kodGoster = k => k ? k.slice(0, 3) + '-' + k.slice(3) : '';
 const yol = (p, q = '') => `api/takim/${p}` + ([q, ek].filter(Boolean).length ? '?' + [q, ek].filter(Boolean).join('&') : '');
 
@@ -334,8 +347,7 @@ const ALANLAR = ['baslik', 'kisa', 'etiketler', 'baglanti', 'aciklama', 'kontrol
 
 function girisGoster() {
   $('girisEkran').classList.remove('hidden'); $('panel').classList.add('hidden'); $('takimsizEkran').classList.add('hidden');
-  if (DAVET) { $('gKodBilgi').classList.remove('hidden'); $('gKodBilgi').innerHTML = `${ik('users')} <b>${kodGoster(DAVET)}</b> koduyla takıma katılmak için giriş yap ya da kayıt ol.`; }
-  $('gKul').focus();
+  if (DAVET) kodSorgula(DAVET); else $('gKod').focus();
   // Öğrenci kaydı kapalıysa "Kayıt ol" bağlantısı gizlenir
   api('GET', 'api/durum').then(d => { window.temaUygula(d.tema); $('kayitGecis').classList.toggle('hidden', d.ogrenciKayit === false); }).catch(() => {});
 }
@@ -344,6 +356,32 @@ function kayitGoster(v) {
   $(v ? 'kAd' : 'gKul').focus();
 }
 $('kayitAc').onclick = e => { e.preventDefault(); kayitGoster(true); };
+// Katılım kodu: takımı gösterir; yeni öğrenci kayda, hesabı olan girişe yönlenir
+async function kodSorgula(kod) {
+  $('gKodHata').textContent = '';
+  try {
+    const t = await api('GET', 'api/ogrenci/kod?kod=' + encodeURIComponent(kod));
+    DAVET = t.kod; davetDenendi = false;
+    const yer = [t.il, t.okul].filter(Boolean).join(' · ');
+    const metin = `${ik('users')} <b>${esc(t.ad)}</b>${yer ? ` <small>(${esc(yer)})</small>` : ''} takımına katılacaksın · ${t.ogrenci} / ${t.max} öğrenci
+      ${t.ogrenci >= t.max ? '<br><b>Takım dolu.</b> Mentörüne ya da takım kaptanına haber ver.' : ''}
+      ${t.teslimAcik ? '' : '<br><b>Teslim süresi doldu;</b> artık takıma katılınamaz.'}
+      <br><a href="#" data-kodsil>Başka kod gir</a>`;
+    for (const id of ['gKodBilgi', 'kKodBilgi']) { $(id).innerHTML = metin; $(id).classList.remove('hidden'); }
+    $('kodKutu').classList.add('hidden');
+    $('gAlt').textContent = t.kayitAcik ? 'Hesabın yoksa önce kayıt ol; varsa giriş yap. Sonra takıma kendiliğinden katılırsın.' : 'Kendi öğrenci hesabınla giriş yap; sonra takıma kendiliğinden katılırsın.';
+    if (t.kayitAcik && !EJ.jeton('takim')) kayitGoster(true); else $('gKul').focus();
+  } catch (err) { $('gKodHata').textContent = err.message; $('kodKutu').classList.remove('hidden'); $('gKod').value = kodGoster(kod); $('gKod').focus(); }
+}
+$('gKodBtn').onclick = () => { const k = $('gKod').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (k.length !== 6) { $('gKodHata').textContent = 'Katılım kodu 6 karakterdir (ör. K7M-Q2X)'; return; } kodSorgula(k); };
+$('gKod').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('gKodBtn').click(); } };
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-kodsil]')) return;
+  e.preventDefault(); DAVET = '';
+  for (const id of ['gKodBilgi', 'kKodBilgi']) $(id).classList.add('hidden');
+  $('kodKutu').classList.remove('hidden'); $('gAlt').textContent = 'Hesabın varsa giriş yap. Takımın ortak hesabıyla da girebilirsin.';
+  kayitGoster(false); $('gKod').value = ''; $('gKod').focus();
+});
 $('girisDon').onclick = e => { e.preventDefault(); kayitGoster(false); };
 
 // ---- Takımı olmayan öğrenci: koduyla katılır ya da yeni takım kurar ----
@@ -363,6 +401,7 @@ async function takimsizGoster() {
   $('katilForm').querySelector('button').disabled = $('kurForm').querySelector('button').disabled = !O.teslimAcik;
   if (DAVET && !$('katilKod').value) $('katilKod').value = kodGoster(DAVET);
   $('katilKod').focus();
+  if (DAVET && O.teslimAcik && !davetDenendi) { davetDenendi = true; $('katilForm').requestSubmit(); }
 }
 $('katilForm').onsubmit = async e => {
   e.preventDefault(); $('katilHata').textContent = '';

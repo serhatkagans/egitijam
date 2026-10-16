@@ -2155,6 +2155,14 @@ async function studentRoutes(req, res, url) {
     const o = await createStudent(await readBody(req));
     return json(res, 200, { token: newSession(`s:${o.id}`, TTL.ogrenci), id: o.id, ogrenci: true });
   }
+  if (m === 'GET' && p === 'kod') {
+    // Giriş ekranında girilen kodun hangi takıma ait olduğunu gösterir (yalnızca vitrinde de görünen bilgiler)
+    postLimited('kod:' + clientIp(req), 30, 'Çok fazla deneme, biraz bekleyin');
+    const t = Q.teamByCode.get(normCode(url.searchParams.get('kod')));
+    if (!t) fail(404, 'Bu koda ait takım bulunamadı. Kodu takım arkadaşından ya da mentöründen kontrol et.');
+    const n = studentsOf(t.id).length;
+    return json(res, 200, { kod: t.kod, ad: t.ad, il: t.il, okul: t.okul, ogrenci: n, max: MAX_OGRENCI, kayitAcik: CFG.ogrenciKayit, teslimAcik: CFG.teslimAcik });
+  }
   const k = sessionOf(req), ogr = k && k.startsWith('s:') && OQ.get.get(k.slice(2));
   if (!ogr) fail(401, 'Oturum geçersiz, tekrar giriş yapın');
   const state = () => {
