@@ -149,12 +149,13 @@
       <section class="bolum" id="b-takimlar">
         <div class="kart">
           <h2>Takımlar</h2>
-          <p>Her takım bir kullanıcı adı ve şifreyle kendi oyun sayfasını düzenler. Şifreler yalnızca oluşturulduğunda gösterilir; kaybedilirse sıfırlayın.</p>
+          <p>Öğrenciler kendi hesaplarıyla girer ve takıma <b>katılım koduyla</b> katılır; kodu takıma iletin ya da öğrenciler takımı kendileri kursun. Takımın ortak kullanıcı adı ve şifresi de çalışmaya devam eder. Şifreler yalnızca oluşturulduğunda gösterilir; kaybedilirse sıfırlayın.</p>
           <div class="arac" style="margin-top:12px">
             <input type="search" id="tAra" placeholder="Takım, oyun, il, okul ara" aria-label="Ara">
             <select id="tFiltre" style="width:auto" aria-label="Süzgeç">
               <option value="">Tümü</option><option value="hazir">Sayfası hazır</option><option value="eksik">Oyun dosyası yok</option>
               <option value="bos">Hiç düzenlenmemiş</option><option value="gizli">Vitrinden kaldırılmış</option>
+              <option value="mentorsuz">Mentörü atanmamış</option><option value="ogrencisiz">Öğrencisi yok</option>
             </select>
             <button class="btn" type="button" id="tEkle"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Takım ekle</button>
             <button class="btn ghost" type="button" id="tToplu"><svg class="ik"><use href="ikonlar.svg#upload"/></svg> Toplu ekle</button>
@@ -162,6 +163,22 @@
           <div class="tablo-kap"><table>
             <thead><tr><th></th><th>Takım / oyun</th><th>İl · okul</th><th>Sayfa</th><th>Vitrinde</th><th>Güncelleme</th><th></th></tr></thead>
             <tbody id="tTablo"></tbody>
+          </table></div>
+        </div>
+        <div class="kart">
+          <h2>Öğrenciler <span id="oSayi" style="color:var(--muted);font-weight:400;font-size:15px"></span></h2>
+          <p>Kendi hesabını açan öğrenciler. Takımı olmayanlar katılım koduyla katılır; buradan bir öğrenciyi koda gerek kalmadan takıma koyabilir ya da takımdan çıkarabilirsiniz. Takım başına en fazla <span id="oMax">5</span> öğrenci.</p>
+          <div class="bayrak"><div><b>Öğrenciler hesap açabilir</b><p>Kapalıysa takım panelindeki "Kayıt ol" gizlenir; mevcut hesaplar çalışmaya devam eder.</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="ogrenciKayit"><span class="sr">Öğrenciler hesap açabilir</span></label></div>
+          <div class="bayrak"><div><b>Öğrenciler takım kurabilir</b><p>Kapalıysa öğrenciler yalnızca yönetimin ya da mentörlerin açtığı takımlara katılım koduyla katılır.</p></div>
+            <label class="anahtar"><input type="checkbox" data-bayrak="ogrenciTakim"><span class="sr">Öğrenciler takım kurabilir</span></label></div>
+          <div class="arac" style="margin-top:12px">
+            <input type="search" id="oAra" placeholder="Öğrenci, kullanıcı adı, takım ara" aria-label="Ara">
+            <select id="oFiltre" style="width:auto" aria-label="Süzgeç"><option value="">Tümü</option><option value="takimsiz">Takımı olmayanlar</option><option value="kaptan">Kaptanlar</option></select>
+          </div>
+          <div class="tablo-kap"><table>
+            <thead><tr><th>Öğrenci</th><th>Takım</th><th>Kayıt</th><th></th></tr></thead>
+            <tbody id="oTablo"></tbody>
           </table></div>
         </div>
       </section>
@@ -451,7 +468,7 @@ async function yenile(veri) {
   catch (e) { if (e.status === 401) { EJ.jetonYaz('yonetim', null); return girisGoster(); } return bildir(e.message, 'h'); }
   window.temaUygula(D.tema);
   $('girisEkran').classList.add('hidden'); $('panel').classList.remove('hidden');
-  genelCiz(); takimCiz(); mentorCiz(); odaCiz(); sonucCiz(); juriCiz(); kriterCiz(); etkinlikCiz(); guvenlikCiz(); arsivCiz();
+  genelCiz(); takimCiz(); ogrenciCiz(); mentorCiz(); odaCiz(); sonucCiz(); juriCiz(); kriterCiz(); etkinlikCiz(); guvenlikCiz(); arsivCiz();
   if (!sohbet) {
     sohbet = EJSohbet({ kok: $('sohbet'), rol: 'yonetim', odaklan: () => document.querySelector('#menu button[data-b="mesajlar"]').click(), degisti: (n, y, b) => {
       $('mesajSayac').innerHTML = (b ? `<span class="sayac-rozet y" title="Bildirilen mesaj" style="background:#dc2626">${b}</span>` : '') + (y ? `<span class="sayac-rozet y" title="Yardım bekleyen takım">${y}</span>` : '') + (n ? `<span class="sayac-rozet">${n > 99 ? '99+' : n}</span>` : '');
@@ -569,7 +586,7 @@ function genelCiz() {
   const oySay = turR.filter(r => r.yayinda).reduce((a, r) => a + r.n, 0), bek = turR.filter(r => r.yayinda).reduce((a, r) => a + r.beklenen, 0);
   const kutular = [
     [T.length, 'takım'], [T.filter(t => t.baslik).length, 'sayfası açılmış'], [T.filter(t => t.oyun).length, 'web sürümü yüklü'],
-    [T.filter(t => t.indir).length, 'indirilebilir dosyalı'], [`${oySay} / ${bek}`, D.odalar.length ? (D.asama === 'final' ? 'final puanı verildi' : 'ön eleme puanı verildi') : 'jüri puanı verildi']
+    [T.filter(t => t.indir).length, 'indirilebilir dosyalı'], [D.ogrenciler.length, 'öğrenci hesabı'], [T.filter(t => !t.mentorler.length).length, 'takımın mentörü yok'], [`${oySay} / ${bek}`, D.odalar.length ? (D.asama === 'final' ? 'final puanı verildi' : 'ön eleme puanı verildi') : 'jüri puanı verildi']
   ];
   $('ozet').innerHTML = kutular.map(([b, s]) => `<div class="kart"><b>${b}</b><span>${s}</span></div>`).join('');
   document.querySelectorAll('[data-bayrak]').forEach(c => c.checked = !!D[c.dataset.bayrak]);
@@ -578,7 +595,7 @@ function genelCiz() {
   $('temaDurum').innerHTML = D.temaGizli ? '<b style="color:var(--warn)">Şu an gizli.</b>' : '';
   $('temaSec').value = D.tema;
   const kok = location.origin + location.pathname.replace(/yonetim\/?$/, '');
-  $('baglantilar').innerHTML = [['Vitrin (herkese açık)', ''], ['Takım paneli', 'takim'], ['Mentör paneli', 'mentor'], ['Jüri paneli', 'juri']].map(([a, p]) =>
+  $('baglantilar').innerHTML = [['Vitrin (herkese açık)', ''], ['Takım / öğrenci girişi', 'takim'], ['Mentör paneli', 'mentor'], ['Jüri paneli', 'juri']].map(([a, p]) =>
     `<div class="arac"><b style="min-width:180px">${a}</b><code style="flex:1">${esc(kok + p)}</code><button class="btn ghost sm" type="button" data-kopya="${esc(kok + p)}">${ik('copy')} Kopyala</button></div>`).join('');
 }
 document.querySelectorAll('[data-bayrak]').forEach(c => c.onchange = () => islem('PUT', 'bayraklar', { [c.dataset.bayrak]: c.checked }, 'Kaydedildi').catch(() => {}));
@@ -592,12 +609,15 @@ document.addEventListener('click', e => {
 function takimCiz() {
   const q = $('tAra').value.trim().toLocaleLowerCase('tr'), f = $('tFiltre').value;
   const l = D.teams.filter(t => (!q || [t.ad, t.id, t.baslik, t.il, t.okul, t.danisman].join(' ').toLocaleLowerCase('tr').includes(q)) &&
-    (!f || (f === 'hazir' && t.baslik && t.kapak && (t.oyun || t.indir)) || (f === 'eksik' && !t.oyun && !t.indir) || (f === 'bos' && !t.guncelleme) || (f === 'gizli' && !t.yayinda)));
+    (!f || (f === 'hazir' && t.baslik && t.kapak && (t.oyun || t.indir)) || (f === 'eksik' && !t.oyun && !t.indir) || (f === 'bos' && !t.guncelleme) || (f === 'gizli' && !t.yayinda)
+      || (f === 'mentorsuz' && !t.mentorler.length) || (f === 'ogrencisiz' && !ogrSay(t.id))));
   const d = (v, ad, t) => `<svg class="ik ${v ? 'var' : ''}" aria-label="${t}"><title>${t}</title><use href="ikonlar.svg#${ad}"/></svg>`;
   $('tTablo').innerHTML = l.length ? l.map(t => `<tr>
     <td>${t.kapak ? `<img class="kucuk-kapak" src="${dosya(t.id, t.kapak)}" alt="">` : '<span class="kucuk-kapak"></span>'}</td>
-    <td><b>${esc(t.ad)}</b><small>${esc(t.id)}${t.baslik ? ' · ' + esc(t.baslik) : ''}${t.oturum ? ' · çevrimiçi' : ''}</small></td>
-    <td>${esc(t.il)}<small>${esc(t.okul)}${t.danisman ? ' · ' + esc(t.danisman) : ''}</small>${t.mentorler.length ? `<small>${ik('graduation-cap')} ${esc(t.mentorler.map(m => D.mentors.find(x => x.id === m)?.ad || m).join(', '))}</small>` : ''}</td>
+    <td><b>${esc(t.ad)}</b><small>${esc(t.id)}${t.baslik ? ' · ' + esc(t.baslik) : ''}${t.oturum ? ' · çevrimiçi' : ''}</small>
+      <small>Kod: <b style="letter-spacing:.08em">${kodGoster(t.kod)}</b> <button class="ikbtn" type="button" data-kopya="${esc(kodGoster(t.kod))}" title="Katılım kodunu kopyala" style="padding:2px;vertical-align:middle">${ik('copy')}</button> · ${ogrSay(t.id)} / ${D.maxOgrenci} öğrenci</small></td>
+    <td>${esc(t.il)}<small>${esc(t.okul)}${t.danisman ? ' · ' + esc(t.danisman) : ''}</small>${t.mentorler.length ? `<small>${ik('graduation-cap')} ${esc(t.mentorler.map(m => D.mentors.find(x => x.id === m)?.ad || m).join(', '))}</small>`
+      : `<small style="color:var(--warn)">${ik('graduation-cap')} Mentör atanmadı</small>`}</td>
     <td><span class="durum-ik">${d(t.baslik, 'pencil', 'Oyun adı')}${d(t.kapak, 'image', 'Kapak')}${d(t.oyun, 'gamepad-2', 'Web sürümü')}${d(t.indir, 'download', 'İndirme dosyası')}${d(t.video, 'youtube', 'Video')}${d(t.uye, 'users', 'Ekip')}</span></td>
     <td><label class="anahtar"><input type="checkbox" data-yayin="${esc(t.id)}" ${t.yayinda ? 'checked' : ''}><span class="sr">Vitrinde</span></label></td>
     <td>${t.guncelleme ? EJ.zaman(t.guncelleme) : '<small>Düzenlenmedi</small>'}</td>
@@ -610,6 +630,52 @@ function takimCiz() {
     </div></td></tr>`).join('') : `<tr><td colspan="7" class="bos">${D.teams.length ? 'Eşleşen takım yok' : 'Henüz takım yok. "Takım ekle" ya da "Toplu ekle" ile başlayın.'}</td></tr>`;
 }
 $('tAra').oninput = takimCiz;
+const kodGoster = k => k ? k.slice(0, 3) + '-' + k.slice(3) : '';
+const ogrSay = id => D.ogrenciler.filter(o => o.takim === id).length;
+
+// ---- Öğrenciler ----
+let ogrTakimDuzen = null; // takımı değiştirilen öğrencinin satırında takım listesi açılır
+function ogrenciCiz() {
+  const q = $('oAra').value.trim().toLocaleLowerCase('tr'), f = $('oFiltre').value;
+  const takimAd = Object.fromEntries(D.teams.map(t => [t.id, t.ad]));
+  const l = D.ogrenciler.filter(o => (!q || [o.ad, o.id, takimAd[o.takim] || ''].join(' ').toLocaleLowerCase('tr').includes(q)) &&
+    (!f || (f === 'takimsiz' && !o.takim) || (f === 'kaptan' && o.kaptan)));
+  $('oSayi').textContent = `· ${D.ogrenciler.length} hesap, ${D.ogrenciler.filter(o => !o.takim).length} takımsız`;
+  $('oMax').textContent = D.maxOgrenci;
+  $('oTablo').innerHTML = l.length ? l.map(o => `<tr>
+    <td><b>${o.kaptan ? ik('star') + ' ' : ''}${esc(o.ad)}</b><small>${esc(o.id)}${o.kaptan ? ' · kaptan' : ''}${o.oturum ? ' · çevrimiçi' : ''}</small></td>
+    <td>${ogrTakimDuzen === o.id
+      ? `<select data-otakim="${esc(o.id)}" aria-label="Takım"><option value="">— Takımsız —</option>${D.teams.map(t => `<option value="${esc(t.id)}" ${t.id === o.takim ? 'selected' : ''}>${esc(t.ad)} (${ogrSay(t.id)}/${D.maxOgrenci})</option>`).join('')}</select>`
+      : o.takim ? `<a href="takim?takim=${encodeURIComponent(o.takim)}">${esc(takimAd[o.takim] || o.takim)}</a>` : '<small style="color:var(--warn)">Takımsız</small>'}</td>
+    <td><small>${EJ.zaman(o.olusturma)}</small></td>
+    <td><div class="islem">
+      <button class="ikbtn" type="button" data-odegis="${esc(o.id)}" title="Takımını değiştir">${ik('users')}</button>
+      <button class="ikbtn" type="button" data-osifre="${esc(o.id)}" title="Şifre sıfırla">${ik('key-round')}</button>
+      <button class="ikbtn" type="button" data-osil="${esc(o.id)}" title="Hesabı sil">${ik('trash-2')}</button>
+    </div></td></tr>`).join('')
+    : `<tr><td colspan="4" class="bos">${D.ogrenciler.length ? 'Eşleşen öğrenci yok' : 'Henüz öğrenci hesabı yok. Öğrenciler takım panelinden "Kayıt ol" ile hesap açar.'}</td></tr>`;
+}
+$('oAra').oninput = ogrenciCiz;
+$('oFiltre').onchange = ogrenciCiz;
+$('oTablo').addEventListener('change', e => {
+  const c = e.target.closest('[data-otakim]'); if (!c) return;
+  ogrTakimDuzen = null;
+  islem('PUT', 'ogrenci', { id: c.dataset.otakim, takim: c.value }, c.value ? 'Öğrenci takıma kondu' : 'Öğrenci takımdan çıkarıldı').catch(() => ogrenciCiz());
+});
+$('oTablo').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const o = D.ogrenciler.find(x => x.id === (b.dataset.odegis || b.dataset.osifre || b.dataset.osil));
+  if (b.dataset.odegis) { ogrTakimDuzen = ogrTakimDuzen === o.id ? null : o.id; ogrenciCiz(); $('oTablo').querySelector('[data-otakim]')?.focus(); }
+  if (b.dataset.osifre) {
+    if (!confirm(`${o.ad} için yeni şifre üretilecek; eski şifre çalışmayacak. Devam edilsin mi?`)) return;
+    const d = await islem('POST', 'ogrenci-sifre', { id: o.id }).catch(() => null);
+    if (d) prompt(`${d.yeniSifre.ad} öğrencisinin yeni giriş bilgileri. Kopyalayıp iletin; bir daha gösterilmez.`, `Kullanıcı adı: ${d.yeniSifre.id}  Şifre: ${d.yeniSifre.sifre}`);
+  }
+  if (b.dataset.osil) {
+    if (!confirm(`${o.ad} (${o.id}) öğrenci hesabı silinsin mi? Takımdan çıkarılır; takımın oyun sayfası ve mesajları silinmez.`)) return;
+    islem('DELETE', 'ogrenci?id=' + encodeURIComponent(o.id), undefined, 'Öğrenci hesabı silindi').catch(() => {});
+  }
+});
 $('tFiltre').onchange = takimCiz;
 
 const takimVeri = t => ({ id: t.id, ad: t.ad, il: t.il, okul: t.okul, danisman: t.danisman, yayinda: t.yayinda, rozet: t.rozet });
@@ -687,7 +753,7 @@ $('sifreIndir').onclick = () => {
   const h = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const csv = '﻿' + (mentor
     ? ['Mentör;Uzmanlık;Kullanıcı adı;Şifre;Giriş adresi', ...uretilen.map(t => [t.ad, t.alan, t.id, t.sifre, adres].map(h).join(';'))]
-    : ['Takım;İl;Okul;Kullanıcı adı;Şifre;Giriş adresi', ...uretilen.map(t => [t.ad, t.il, t.okul, t.id, t.sifre, adres].map(h).join(';'))]).join('\r\n');
+    : ['Takım;İl;Okul;Kullanıcı adı;Şifre;Giriş adresi;Öğrenci katılım kodu', ...uretilen.map(t => [t.ad, t.il, t.okul, t.id, t.sifre, adres, kodGoster(t.kod)].map(h).join(';'))]).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = `egitijam-${mentor ? 'mentor' : 'takim'}-sifreleri-${new Date().toISOString().slice(0, 10)}.csv`;

@@ -134,7 +134,7 @@ const EJ = (() => {
       const html = PANEL[rol].baglantilar(id).map(([href, ad, sayac, yeniSekme]) =>
         `<a href="${href}" data-oturum${yeniSekme ? ' target="_blank"' : ''}${vitrin && href === './' ? ' class="secili"' : ''}>${esc(ad)}${sayac && okunmamis ? `<span class="sayac-rozet">${okunmamis > 99 ? '99+' : okunmamis}</span>` : ''}</a>`).join('')
         + `<a href="#" data-oturum data-cikis title="${esc(d.ben.ad)} oturumunu kapat">Çıkış</a>`
-        + `<span class="oturum-ad" data-oturum title="Giriş yapılan hesap">${ik(rol === 'takim' ? 'users' : rol === 'mentor' ? 'graduation-cap' : rol === 'juri' ? 'vote' : 'shield-check')}${esc(d.ben.ad)}</span>`;
+        + `<span class="oturum-ad" data-oturum title="Giriş yapılan hesap">${ik(rol === 'takim' ? 'users' : rol === 'mentor' ? 'graduation-cap' : rol === 'juri' ? 'vote' : 'shield-check')}${d.ben.uye ? esc(d.ben.uye) + ' · ' : ''}${esc(d.ben.ad)}</span>`;
       giris.forEach(a => a.remove());
       nav.insertAdjacentHTML('beforeend', html);
       // Yönetim paneli Mesajlar sekmesini sessionStorage'dan açar

@@ -114,6 +114,8 @@ function EJSohbet({ kok, rol, degisti, odaklan }) {
   }
   const kisiAdi = (kim, kisiler) => kim === ben?.kim ? ben.ad : kisiler?.[kim] || uyeler.find(u => u.kim === kim)?.ad || 'bilinmeyen';
   const benimIcin = kim => kim === 'herkes' || kim === ben?.kim;
+  // Öğrenci hesabı takımı adına yazar; kendi mesajı yalnızca kendi adıyla yazdıklarıdır
+  const benimMi = m => m.kim === ben?.kim && (!ben.uye || m.uye === ben.uye);
   // Satır içi: **kalın**, __altı çizili__, *italik* / _italik_, ~~üstü çizili~~, ||sürpriz||
   const satirIci = s => s
     .replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '<strong>$1</strong>')
@@ -206,7 +208,7 @@ function EJSohbet({ kok, rol, degisti, odaklan }) {
       if (g !== sonGun) { h += `<div class="s-gun"><span>${g}</span></div>`; sonGun = g; onceki = null; }
       const birlesik = onceki && onceki.kim === m.kim && onceki.uye === m.uye && m.zaman - onceki.zaman < 5 * 60e3 && !m.yardim && !m.yanit;
       const gorunenAd = m.uye || m.ad;
-      const benim = m.kim === ben?.kim;
+      const benim = benimMi(m);
       const silebilir = ben && (ben.rol === 'admin' || benim);
       const bahsedildi = !benim && ([...String(m.metin).matchAll(BAHIS)].some(x => benimIcin(x[1])) || (m.yanit && m.yanit.kim === ben?.kim));
       const etiket = m.rol === 'mentor' ? `Mentör${m.alan ? ' · ' + esc(m.alan) : ''}` : m.rol === 'takim' && m.uye ? `Takım · ${esc(m.ad)}` : ROL_AD[m.rol];
@@ -231,7 +233,7 @@ function EJSohbet({ kok, rol, degisti, odaklan }) {
           <button type="button" data-emoji-ac title="Tepki ekle">${ik('smile-plus')}</button>
           ${yazabilir ? `<button type="button" data-yanitla title="Yanıtla">${ik('reply')}</button>` : ''}
           ${benim ? `<button type="button" data-duzenle title="Düzenle">${ik('pencil')}</button>` : ''}
-          ${!benim && !yonetici ? `<button type="button" data-bildir title="Yönetime bildir">${ik('flag')}</button>` : ''}
+          ${m.kim !== ben?.kim && !yonetici ? `<button type="button" data-bildir title="Yönetime bildir">${ik('flag')}</button>` : ''}
           ${!benim && yonetici && m.rol !== 'admin' ? `<button type="button" data-sustur title="Yazanı sustur">${ik('ban')}</button>` : ''}
           ${silebilir ? `<button type="button" class="tehlike" data-sil title="Mesajı sil">${ik('trash-2')}</button>` : ''}
         </div>`}
@@ -523,7 +525,8 @@ function EJSohbet({ kok, rol, degisti, odaklan }) {
   }
 
   // ---- Takım mesajını yazan öğrenci ----
-  // Takım tek hesapla girer; mesajı hangi öğrencinin yazdığı seçilir (tarayıcıda hatırlanır)
+  // Ortak takım hesabıyla girilince mesajı hangi öğrencinin yazdığı seçilir (tarayıcıda hatırlanır).
+  // Öğrenci kendi hesabıyla girdiyse sunucu adını kendisi yazar, seçim gösterilmez.
   const yazanSec = $('.s-yazan select');
   const yazanAnahtar = () => 'ejYazan-' + (ben?.kim || '');
   function yazanCiz() {
@@ -775,7 +778,7 @@ function EJSohbet({ kok, rol, degisti, odaklan }) {
     if (e.key === 'Escape' && yanitlanan) { e.preventDefault(); return yanitIptal(); }
     // Boş kutuda yukarı ok: son mesajınızı düzenler
     if (e.key === 'ArrowUp' && !metinAlan.value) {
-      const son = [...mesajlar].reverse().find(m => m.kim === ben?.kim && m.metin);
+      const son = [...mesajlar].reverse().find(m => benimMi(m) && m.metin);
       if (son) { e.preventDefault(); return duzenle(son); }
     }
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); gonder(); }

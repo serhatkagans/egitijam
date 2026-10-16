@@ -5,7 +5,8 @@
 //
 // Roller
 //   ziyaretçi : giriş gerekmez; vitrini gezer, ürün sayfalarını açar, oyunları oynar
-//   takım     : yöneticinin verdiği kullanıcı adı + şifre ile kendi ürün sayfasını düzenler (/takim)
+//   öğrenci   : kendi hesabını açar (/takim), takım kurar ya da takımın katılım koduyla katılır; takımın sayfasını düzenler
+//   takım     : yöneticinin verdiği ortak kullanıcı adı + şifre ile de girilebilir (eski yöntem)
 //   jüri      : ürünleri kriterlere göre puanlar (/juri)
 //   yönetici  : her şey (/yonetim)
 const http = require('http');
@@ -99,6 +100,8 @@ const DEFAULTS = {
   oylamaAcik: false,   // jüriler puan verebilir
   sonuclarAcik: false, // ödüller vitrinde görünür
   mentorKayit: false,  // mentörler kendi takımlarını oluşturabilir
+  ogrenciKayit: true,  // öğrenciler kendi hesabını açıp katılım koduyla takıma katılabilir
+  ogrenciTakim: true,  // öğrenciler yeni takım kurabilir (kapalıysa yalnızca yönetimin/mentörün açtığı takımlara katılır)
   genelSohbet: true,   // Genel sohbet kanalına takımlar ve mentörler yazabilir (kapalıysa yalnızca okur)
   temaGizle: true,     // tema, geri sayımdaki başlangıç anına kadar yönetim dışındakilerden gizlenir
   geriBildirimAcik: false, // jürilerin "takıma geri bildirim" yazıları takım panelinde (isimsiz) görünür
@@ -174,6 +177,17 @@ CREATE TABLE IF NOT EXISTS mentorler (
   olusturma  INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS mentor_takim (mentor TEXT NOT NULL, takim TEXT NOT NULL, PRIMARY KEY (mentor, takim));
+-- Öğrenciler: her öğrencinin kendi hesabı vardır; takıma katılım koduyla girer. Takımı kuran (ya da ilk katılan) kaptandır.
+CREATE TABLE IF NOT EXISTS ogrenciler (
+  id         TEXT PRIMARY KEY,   -- kullanıcı adı
+  ad         TEXT NOT NULL,
+  sifre      TEXT NOT NULL,
+  takim      TEXT,               -- henüz takımı yoksa NULL
+  kaptan     INTEGER NOT NULL DEFAULT 0,
+  katilma    INTEGER NOT NULL DEFAULT 0,
+  olusturma  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ogrenciler_takim ON ogrenciler (takim);
 -- Mesajlaşma: kanal 'duyuru' | 'mentor' (mentör odası) | 't:<takım>' (takımın kendi kanalı)
 --   | 'juri' (tüm jüriler + yönetim) | 'oda:<oda>' (jüri odasının kanalı)
 CREATE TABLE IF NOT EXISTS mesajlar (
@@ -217,6 +231,10 @@ CREATE TABLE IF NOT EXISTS geribildirimler (juri TEXT NOT NULL, takim TEXT NOT N
   if (!cols.has('uye')) db.exec('ALTER TABLE mesajlar ADD COLUMN uye TEXT'); // takım mesajını yazan öğrenci
   db.exec('CREATE INDEX IF NOT EXISTS mesajlar_surum ON mesajlar (kanal, surum)');
 }
+
+// Eski veritabanı: takımların katılım kodu yoksa eklenir (kodlar aşağıda, takım sorgularından sonra üretilir)
+if (!db.prepare('PRAGMA table_info(takimlar)').all().some(c => c.name === 'kod')) db.exec('ALTER TABLE takimlar ADD COLUMN kod TEXT');
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS takimlar_kod ON takimlar (kod)');
 
 // Eski veritabanı: oylar tablosunda aşama sütunu yoksa tablo yeniden kurulur, oylar ön eleme sayılır
 if (!db.prepare('PRAGMA table_info(oylar)').all().some(c => c.name === 'tur')) {
@@ -287,8 +305,10 @@ const maxTotals = () => ({
 const Q = {
   team: db.prepare('SELECT * FROM takimlar WHERE id = ?'),
   teams: db.prepare('SELECT * FROM takimlar ORDER BY ad COLLATE NOCASE'),
-  insertTeam: db.prepare(`INSERT INTO takimlar (id, ad, il, okul, danisman, sifre, sayfa, yayinda, rozet, olusturma, guncelleme)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+  insertTeam: db.prepare(`INSERT INTO takimlar (id, ad, il, okul, danisman, sifre, sayfa, yayinda, rozet, olusturma, guncelleme, kod)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`),
+  teamByCode: db.prepare('SELECT * FROM takimlar WHERE kod = ?'),
+  setCode: db.prepare('UPDATE takimlar SET kod = ? WHERE id = ?'),
   updateTeamInfo: db.prepare('UPDATE takimlar SET ad = ?, il = ?, okul = ?, danisman = ?, yayinda = ?, rozet = ? WHERE id = ?'),
   updatePage: db.prepare('UPDATE takimlar SET sayfa = ?, guncelleme = ? WHERE id = ?'),
   setTeamPw: db.prepare('UPDATE takimlar SET sifre = ? WHERE id = ?'),
@@ -308,6 +328,17 @@ const Q = {
   purgeSessions: db.prepare('DELETE FROM oturumlar WHERE bitis < ?'),
   sessionCounts: db.prepare('SELECT kim, COUNT(*) AS n FROM oturumlar WHERE bitis >= ? GROUP BY kim')
 };
+
+// Katılım kodu: 6 karakter, karışmayan harf ve rakamlar; "K7M-Q2X" biçiminde gösterilir, tire ve boşluk önemsenmez
+const normCode = k => String(k || '').toLocaleUpperCase('en').replace(/[^A-Z0-9]/g, '');
+function newCode() {
+  const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  for (;;) {
+    const k = Array.from(crypto.randomBytes(6), b => abc[b % abc.length]).join('');
+    if (!Q.teamByCode.get(k)) return k;
+  }
+}
+for (const r of db.prepare('SELECT id FROM takimlar WHERE kod IS NULL').all()) Q.setCode.run(newCode(), r.id);
 
 const teamDir = id => path.join(URUN_DIR, id);
 const pageOf = row => { try { return JSON.parse(row.sayfa) || {}; } catch { return {}; } };
@@ -374,11 +405,11 @@ function createTeam({ ad, il, okul, danisman, kullanici }, hazir) {
   let base = normalizeUser(kullanici) || normalizeUser(ad) || 'takim';
   base = base.slice(0, 30);
   let id = base;
-  if (kullanici && Q.team.get(id)) fail(409, `"${id}" kullanıcı adı kullanılıyor`);
-  for (let i = 2; Q.team.get(id) || JURY_NAME()[id]; i++) id = `${base}${i}`;
-  const sifre = hazir ? hazir.sifre : newPassword(), now = Date.now();
-  Q.insertTeam.run(id, ad, il, okul, danisman, hazir ? hazir.ozet : hashPw(sifre), '{}', 1, '', now, 0);
-  return { id, ad, il, okul, sifre };
+  if (kullanici && (Q.team.get(id) || OQ.get.get(id))) fail(409, `"${id}" kullanıcı adı kullanılıyor`);
+  for (let i = 2; Q.team.get(id) || OQ.get.get(id) || JURY_NAME()[id]; i++) id = `${base}${i}`;
+  const sifre = hazir ? hazir.sifre : newPassword(), now = Date.now(), kod = newCode();
+  Q.insertTeam.run(id, ad, il, okul, danisman, hazir ? hazir.ozet : hashPw(sifre), '{}', 1, '', now, 0, kod);
+  return { id, ad, il, okul, sifre, kod };
 }
 
 // Toplu ekleme: her satır "Takım adı; İl; Okul; Danışman öğretmen" (Excel'den yapıştırılırsa sekmeyle ayrılır)
@@ -399,7 +430,7 @@ function renameTeamId(oldId, newId) {
   newId = normalizeUser(newId).slice(0, 30);
   if (!newId) fail(400, 'Kullanıcı adı boş olamaz');
   if (newId === oldId) return oldId;
-  if (Q.team.get(newId)) fail(409, `"${newId}" kullanıcı adı kullanılıyor`);
+  if (Q.team.get(newId) || OQ.get.get(newId)) fail(409, `"${newId}" kullanıcı adı kullanılıyor`);
   tx(() => {
     Q.renameTeam.run(newId, oldId);
     db.prepare('UPDATE oylar SET takim = ? WHERE takim = ?').run(newId, oldId);
@@ -414,6 +445,7 @@ function renameTeamId(oldId, newId) {
     for (const tablo of ['bahsetmeler', 'ekler']) db.prepare(`UPDATE ${tablo} SET kanal = ? WHERE kanal = ?`).run(`t:${newId}`, `t:${oldId}`);
     for (const tablo of ['bildirimler', 'susturmalar']) db.prepare(`UPDATE ${tablo} SET kim = ? WHERE kim = ?`).run(`t:${newId}`, `t:${oldId}`);
     db.prepare('UPDATE geribildirimler SET takim = ? WHERE takim = ?').run(newId, oldId);
+    db.prepare('UPDATE ogrenciler SET takim = ? WHERE takim = ?').run(newId, oldId);
     Q.deleteSessionsOf.run(`t:${oldId}`);
   });
   if (CFG.finalistler.includes(oldId)) { CFG.finalistler = CFG.finalistler.map(x => x === oldId ? newId : x); saveCfg(); }
@@ -428,6 +460,7 @@ function removeTeam(id) {
     db.prepare('DELETE FROM oylar WHERE takim = ?').run(id);
     db.prepare('DELETE FROM mentor_takim WHERE takim = ?').run(id);
     db.prepare('DELETE FROM geribildirimler WHERE takim = ?').run(id);
+    db.prepare('UPDATE ogrenciler SET takim = NULL, kaptan = 0 WHERE takim = ?').run(id); // öğrenciler hesaplarını korur, takımsız kalır
     db.prepare('DELETE FROM susturmalar WHERE kim = ?').run(`t:${id}`);
     Q.clearRoom.run(id);
     purgeChannel(`t:${id}`);
@@ -499,6 +532,72 @@ function removeMentor(id) {
   });
 }
 
+// ---- Öğrenciler ----
+// Her öğrenci kendi hesabıyla girer. Takımı kuran öğrenci kaptan olur; diğerleri takımın katılım koduyla katılır.
+// Takıma katılan öğrencinin adı, takım sayfasının Ekip bölümüne kendiliğinden eklenir (görevini takım yazar).
+const MAX_OGRENCI = 5; // kurallar: takım başına en fazla 5 öğrenci (danışman öğretmen ayrıca)
+const OQ = {
+  get: db.prepare('SELECT * FROM ogrenciler WHERE id = ?'),
+  all: db.prepare('SELECT * FROM ogrenciler ORDER BY ad COLLATE NOCASE'),
+  ofTeam: db.prepare('SELECT * FROM ogrenciler WHERE takim = ? ORDER BY kaptan DESC, katilma, ad COLLATE NOCASE'),
+  count: db.prepare('SELECT COUNT(*) AS n FROM ogrenciler WHERE takim = ?'),
+  insert: db.prepare('INSERT INTO ogrenciler (id, ad, sifre, takim, kaptan, katilma, olusturma) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  setTeam: db.prepare('UPDATE ogrenciler SET takim = ?, kaptan = ?, katilma = ? WHERE id = ?'),
+  setCaptain: db.prepare('UPDATE ogrenciler SET kaptan = ? WHERE id = ?'),
+  setPw: db.prepare('UPDATE ogrenciler SET sifre = ? WHERE id = ?'),
+  remove: db.prepare('DELETE FROM ogrenciler WHERE id = ?')
+};
+function getStudent(id) {
+  const row = typeof id === 'string' && OQ.get.get(id);
+  if (!row) fail(404, 'Öğrenci bulunamadı');
+  return row;
+}
+const studentsOf = takim => OQ.ofTeam.all(takim).map(o => ({ id: o.id, ad: o.ad, kaptan: !!o.kaptan }));
+
+async function createStudent({ ad, kullanici, sifre }) {
+  ad = str(ad, 60);
+  const id = normalizeUser(kullanici).slice(0, 30);
+  if (!ad) fail(400, 'Adınızı ve soyadınızı yazın');
+  if (id.length < 3) fail(400, 'Kullanıcı adı en az 3 harf ya da rakam olmalı');
+  if (String(sifre || '').length < 6) fail(400, 'Şifre en az 6 karakter olmalı');
+  if (OQ.get.get(id) || Q.team.get(id)) fail(409, `"${id}" kullanıcı adı alınmış, başka bir ad seçin`);
+  OQ.insert.run(id, ad, await hashPwAsync(sifre), null, 0, 0, Date.now());
+  return OQ.get.get(id);
+}
+
+// Takım sayfasının Ekip listesinde öğrencinin satırı (sayfanın güncelleme zamanı değişmez)
+function syncMember(takim, ad, ekle) {
+  const row = Q.team.get(takim);
+  if (!row) return;
+  const p = pageOf(row), l = p.uyeler || [], var_ = l.some(u => trKey(u.ad) === trKey(ad));
+  if (ekle && !var_ && l.length < 8) p.uyeler = [...l, { ad, rol: '' }];
+  else if (!ekle && var_) p.uyeler = l.filter(u => trKey(u.ad) !== trKey(ad));
+  else return;
+  Q.updatePage.run(JSON.stringify(p), row.guncelleme, takim);
+}
+function joinTeam(ogr, takim) {
+  if (ogr.takim) fail(400, 'Zaten bir takımdasınız. Başka takıma geçmek için önce takımdan ayrılın.');
+  if (OQ.count.get(takim).n >= MAX_OGRENCI) fail(400, `Takım dolu: bir takımda en fazla ${MAX_OGRENCI} öğrenci olabilir`);
+  tx(() => {
+    OQ.setTeam.run(takim, OQ.count.get(takim).n ? 0 : 1, Date.now(), ogr.id); // takımın ilk öğrencisi kaptandır
+    syncMember(takim, ogr.ad, true);
+  });
+}
+function leaveTeam(ogr) {
+  if (!ogr.takim) return;
+  tx(() => {
+    OQ.setTeam.run(null, 0, 0, ogr.id);
+    syncMember(ogr.takim, ogr.ad, false);
+    // Kaptan ayrılırsa kaptanlık takıma en önce katılan öğrenciye geçer
+    const kalan = OQ.ofTeam.all(ogr.takim);
+    if (ogr.kaptan && kalan.length && !kalan.some(o => o.kaptan)) OQ.setCaptain.run(1, kalan[0].id);
+  });
+}
+function removeStudent(id) {
+  const o = getStudent(id);
+  tx(() => { leaveTeam(o); OQ.remove.run(o.id); Q.deleteSessionsOf.run(`s:${o.id}`); });
+}
+
 // Takım sayfasının kontrol listesi (takım panelindeki listeyle aynı maddeler)
 function pageProgress(p) {
   const uyeler = p.uyeler || [];
@@ -567,8 +666,13 @@ const yeniSurum = () => ++surumSayac;
 const gorulme = new Map();
 const CEVRIMICI = 70e3;
 
-// Oturum kimliğinden kişi: yönetici, mentör, takım ya da jüri (yoksa null)
+// Oturum kimliğinden kişi: yönetici, mentör, takım ya da jüri (yoksa null).
+// Öğrenci sohbette takımı adına konuşur (kim: 't:<takım>'); mesajı yazan öğrenci (uye) kendi adıdır.
 function identityOf(k) {
+  if (k && k.startsWith('s:')) {
+    const o = OQ.get.get(k.slice(2)), t = o && o.takim && Q.team.get(o.takim);
+    return t ? { kim: 't:' + t.id, rol: 'takim', ad: t.ad, id: t.id, uye: o.ad, ogrenci: o.id } : null;
+  }
   if (k === '@admin') return { kim: k, rol: 'admin', ad: 'Yönetim' };
   if (k && k.startsWith('m:')) { const m = MQ.get.get(k.slice(2)); if (m) return { kim: k, rol: 'mentor', ad: m.ad, id: m.id, alan: m.alan }; }
   if (k && k.startsWith('t:')) { const t = Q.team.get(k.slice(2)); if (t) return { kim: k, rol: 'takim', ad: t.ad, id: t.id }; }
@@ -576,7 +680,9 @@ function identityOf(k) {
   return null;
 }
 function speakerOf(req) {
-  return identityOf(sessionOf(req)) || fail(401, 'Oturum geçersiz, tekrar giriş yapın');
+  const k = sessionOf(req), s = identityOf(k);
+  if (!s && k && k.startsWith('s:') && OQ.get.get(k.slice(2))) fail(409, 'Mesajlar için önce bir takıma katılın');
+  return s || fail(401, 'Oturum geçersiz, tekrar giriş yapın');
 }
 // 'yaz' | 'oku' | null. Jüriler tarafsızlık için takım kanallarını ve mentör odasını görmez;
 // takımlar ve mentörler de jüri kanallarını görmez.
@@ -829,6 +935,8 @@ function serveAttachment(req, res, url) {
 async function messageRoutes(req, res, url) {
   const p = url.pathname.slice('/api/mesaj'.length), m = req.method;
   const s = speakerOf(req);
+  // Kendi mesajı: öğrenci hesabıyla yalnızca kendi yazdıkları (takım arkadaşlarınınki değil)
+  const benim = row => row.kim === s.kim && (!s.uye || row.uye === s.uye);
   const own = id => {
     const row = KQ.get.get(Number(id));
     if (!row || row.silindi || !channelAccess(s, row.kanal)) fail(404, 'Mesaj bulunamadı');
@@ -838,8 +946,8 @@ async function messageRoutes(req, res, url) {
   if (m === 'GET' && p === '') {
     const kanal = url.searchParams.get('kanal');
     const sus = MQ_SUS.get.get(s.kim, Date.now());
-    const result = { ben: { kim: s.kim, rol: s.rol, ad: s.ad, susturma: sus ? { bitis: sus.bitis, neden: sus.neden } : null }, kanallar: channelsOf(s), surum: surumSayac };
-    if (s.rol === 'takim') result.ben.uyeler = teamMembers(s.id);
+    const result = { ben: { kim: s.kim, rol: s.rol, ad: s.ad, uye: s.uye || '', susturma: sus ? { bitis: sus.bitis, neden: sus.neden } : null }, kanallar: channelsOf(s), surum: surumSayac };
+    if (s.rol === 'takim') result.ben.uyeler = s.uye ? [] : teamMembers(s.id); // öğrenci hesabında yazan seçilmez
     if (s.rol === 'admin') result.bildirimSayisi = db.prepare('SELECT COUNT(DISTINCT mesaj) AS n FROM bildirimler').get().n;
     if (kanal) {
       if (!channelAccess(s, kanal)) fail(403, 'Bu kanala erişiminiz yok');
@@ -875,7 +983,8 @@ async function messageRoutes(req, res, url) {
     const metin = kufurSuz(cleanMentions(str(b.metin, 2000), s, b.kanal));
     if (!metin && !ekler.length) fail(400, 'Mesaj boş');
     let uye = null;
-    if (s.rol === 'takim') {
+    if (s.uye) uye = s.uye;
+    else if (s.rol === 'takim') {
       const uyeler = teamMembers(s.id);
       uye = str(b.uye, 80) || null;
       if (uyeler.length && !uyeler.includes(uye)) fail(400, 'Mesajı yazan öğrenciyi seçin');
@@ -896,7 +1005,7 @@ async function messageRoutes(req, res, url) {
   }
   if (m === 'PUT' && p === '') {
     const b = await readBody(req, 3e4), row = own(b.id);
-    if (row.kim !== s.kim) fail(403, 'Yalnızca kendi mesajınızı düzenleyebilirsiniz');
+    if (!benim(row)) fail(403, 'Yalnızca kendi mesajınızı düzenleyebilirsiniz');
     susturmaKontrol(s);
     const metin = kufurSuz(cleanMentions(str(b.metin, 2000), s, row.kanal));
     if (!metin && !KQ.attachmentsOf.all(JSON.stringify([row.id])).length) fail(400, 'Mesaj boş olamaz; silmek için sil düğmesini kullanın');
@@ -905,7 +1014,7 @@ async function messageRoutes(req, res, url) {
   }
   if (m === 'DELETE' && p === '') {
     const row = own(url.searchParams.get('id'));
-    if (s.rol !== 'admin' && row.kim !== s.kim) fail(403, 'Yalnızca kendi mesajınızı silebilirsiniz');
+    if (s.rol !== 'admin' && !benim(row)) fail(403, 'Yalnızca kendi mesajınızı silebilirsiniz');
     tx(() => {
       for (const e of KQ.attachmentsOf.all(JSON.stringify([row.id]))) { removeAttachmentFile(e.id); KQ.dropAttachment.run(e.id); }
       db.prepare('DELETE FROM tepkiler WHERE mesaj = ?').run(row.id);
@@ -1215,7 +1324,7 @@ async function setPassword({ tur, juri, sifre }) {
 
 // ---- Oturumlar: jeton açık tutulmaz, yalnızca SHA-256 özeti saklanır ----
 // kim: '@admin' | 'j:<jüri>' | 't:<takım>' | 'm:<mentör>'
-const TTL = { admin: 12 * 3600e3, juri: 24 * 3600e3, takim: 7 * 24 * 3600e3, mentor: 7 * 24 * 3600e3 };
+const TTL = { admin: 12 * 3600e3, juri: 24 * 3600e3, takim: 7 * 24 * 3600e3, mentor: 7 * 24 * 3600e3, ogrenci: 7 * 24 * 3600e3 };
 const tokenHash = t => crypto.createHash('sha256').update(t).digest('hex');
 Q.purgeSessions.run(Date.now());
 function newSession(kim, ttl) {
@@ -1234,7 +1343,16 @@ function sessionOf(req) {
   const s = Q.session.get(tokenHash(t)), now = Date.now();
   if (!s || s.bitis < now) return null;
   gorulme.set(s.kim, now);
+  // Öğrenci çevrimiçiyse sohbetin üye listesinde takımı çevrimiçi görünür
+  if (s.kim.startsWith('s:')) { const o = OQ.get.get(s.kim.slice(2)); if (o && o.takim) gorulme.set('t:' + o.takim, now); }
   return s.kim;
+}
+// Açık oturum sayıları; öğrenci oturumları takımlarının sayısına da eklenir (panellerdeki "çevrimiçi" için)
+function sessionCounts(now) {
+  const n = Object.fromEntries(Q.sessionCounts.all(now).map(r => [r.kim, r.n]));
+  for (const r of db.prepare(`SELECT o.takim, COUNT(*) AS n FROM oturumlar s JOIN ogrenciler o ON s.kim = 's:' || o.id
+    WHERE s.bitis >= ? AND o.takim IS NOT NULL GROUP BY o.takim`).all(now)) n[`t:${r.takim}`] = (n[`t:${r.takim}`] || 0) + r.n;
+  return n;
 }
 const isAdmin = req => sessionOf(req) === '@admin';
 function juryOf(req) {
@@ -1251,6 +1369,11 @@ function teamOf(req, url) {
     return { id, admin: false, mentor: k.slice(2) };
   }
   if (k && k.startsWith('t:') && Q.team.get(k.slice(2))) return { id: k.slice(2), admin: false };
+  if (k && k.startsWith('s:')) {
+    const o = OQ.get.get(k.slice(2));
+    if (o && o.takim) return { id: o.takim, admin: false, ogrenci: o };
+    if (o) fail(409, 'Henüz bir takıma katılmadınız', { takimsiz: true });
+  }
   fail(401, 'Oturum geçersiz, tekrar giriş yapın');
 }
 function loginLimited(req) {
@@ -1450,6 +1573,7 @@ function teamView(row) {
   const mentorler = db.prepare('SELECT m.ad, m.alan FROM mentor_takim mt JOIN mentorler m ON m.id = mt.mentor WHERE mt.takim = ? ORDER BY m.ad').all(row.id);
   return {
     mentorler: mentorler.map(m => ({ ad: m.ad, alan: m.alan })),
+    ekip: { kod: row.kod, ogrenciler: studentsOf(row.id), max: MAX_OGRENCI },
     id: row.id, ad: row.ad, il: row.il, okul: row.okul, danisman: row.danisman, yayinda: !!row.yayinda,
     sayfa: pageOf(row), guncelleme: row.guncelleme,
     teslimAcik: CFG.teslimAcik, event: pubEvent(), tema: CFG.tema, simdi: Date.now(),
@@ -1653,12 +1777,14 @@ function removeDonem(donem) {
 // ---- Yönetim paneli ----
 function adminState() {
   const now = Date.now();
-  const sessions = Object.fromEntries(Q.sessionCounts.all(now).map(r => [r.kim, r.n]));
+  const sessions = sessionCounts(now);
   const byMentor = {}, byTeam = {}, rooms = roomOfTeam();
   for (const a of MQ.assignments.all()) { (byMentor[a.mentor] ||= []).push(a.takim); (byTeam[a.takim] ||= []).push(a.mentor); }
   return {
     event: CFG.event, criteria: CFG.criteria, maxTotals: maxTotals(), tema: CFG.tema,
     teslimAcik: CFG.teslimAcik, oylamaAcik: CFG.oylamaAcik, sonuclarAcik: CFG.sonuclarAcik, mentorKayit: CFG.mentorKayit, genelSohbet: CFG.genelSohbet,
+    ogrenciKayit: CFG.ogrenciKayit, ogrenciTakim: CFG.ogrenciTakim, maxOgrenci: MAX_OGRENCI,
+    ogrenciler: OQ.all.all().map(o => ({ id: o.id, ad: o.ad, takim: o.takim, kaptan: !!o.kaptan, olusturma: o.olusturma, oturum: sessions[`s:${o.id}`] || 0 })),
     temaGizle: CFG.temaGizle, temaGizli: temaGizli(), geriBildirimAcik: CFG.geriBildirimAcik, yasakKelimeler: CFG.yasakKelimeler,
     geriBildirimSayisi: db.prepare('SELECT COUNT(*) AS n FROM geribildirimler').get().n,
     mentors: MQ.all.all().map(r => ({ id: r.id, ad: r.ad, alan: r.alan, takimlar: byMentor[r.id] || [], oturum: sessions[`m:${r.id}`] || 0 })),
@@ -1669,7 +1795,7 @@ function adminState() {
         id: row.id, ad: row.ad, il: row.il, okul: row.okul, danisman: row.danisman, yayinda: !!row.yayinda, rozet: row.rozet,
         baslik: p.baslik || '', kapak: p.kapak || null, oyun: !!p.oyun, indir: !!p.indir, video: !!p.video,
         gorsel: (p.gorseller || []).length, uye: (p.uyeler || []).length, guncelleme: row.guncelleme, oturum: sessions[`t:${row.id}`] || 0,
-        mentorler: byTeam[row.id] || [], oda: rooms[row.id] || ''
+        mentorler: byTeam[row.id] || [], oda: rooms[row.id] || '', kod: row.kod
       };
     }),
     ranking: ranking('on'), votes: loadVotes('on'),
@@ -1686,9 +1812,11 @@ function backup() {
   return {
     tur: 'egitijam-yedek', zaman: new Date().toISOString(),
     ayarlar: { event: CFG.event, juries: CFG.juries, criteria: CFG.criteria, teslimAcik: CFG.teslimAcik, oylamaAcik: CFG.oylamaAcik, sonuclarAcik: CFG.sonuclarAcik, mentorKayit: CFG.mentorKayit, genelSohbet: CFG.genelSohbet, temaGizle: CFG.temaGizle, geriBildirimAcik: CFG.geriBildirimAcik, yasakKelimeler: CFG.yasakKelimeler, tema: CFG.tema,
+      ogrenciKayit: CFG.ogrenciKayit, ogrenciTakim: CFG.ogrenciTakim,
       odalar: CFG.odalar, asama: CFG.asama, finalistler: CFG.finalistler, finalSayi: CFG.finalSayi },
     odaTakim: Q.rooms.all(),
     mentorler: MQ.all.all(), mentorTakim: MQ.assignments.all(),
+    ogrenciler: OQ.all.all(),
     mesajlar: db.prepare('SELECT * FROM mesajlar WHERE silindi = 0 ORDER BY id').all(),
     tepkiler: db.prepare('SELECT * FROM tepkiler').all(),
     ekler: db.prepare('SELECT * FROM ekler WHERE mesaj IS NOT NULL').all(), // dosyaların kendisi ekler/ klasöründe kalır
@@ -1711,6 +1839,7 @@ function restore(b) {
       setJuries(Array.isArray(a.juries) ? a.juries : []);
       setCriteria(a.criteria);
       CFG.teslimAcik = a.teslimAcik !== false; CFG.oylamaAcik = !!a.oylamaAcik; CFG.sonuclarAcik = !!a.sonuclarAcik; CFG.mentorKayit = !!a.mentorKayit; CFG.genelSohbet = a.genelSohbet !== false;
+      CFG.ogrenciKayit = a.ogrenciKayit !== false; CFG.ogrenciTakim = a.ogrenciTakim !== false;
       CFG.temaGizle = a.temaGizle !== false; CFG.geriBildirimAcik = !!a.geriBildirimAcik; CFG.yasakKelimeler = kelimeListesi(a.yasakKelimeler);
       CFG.asama = a.asama === 'final' && CFG.odalar.length ? 'final' : 'on';
       CFG.finalSayi = Number.isInteger(a.finalSayi) && a.finalSayi > 0 ? a.finalSayi : 2;
@@ -1719,8 +1848,19 @@ function restore(b) {
         const id = normalizeUser(t.id);
         if (!id || !t.ad || !t.sifre) continue;
         Q.insertTeam.run(id, str(t.ad, 80), str(t.il, 40), str(t.okul, 120), str(t.danisman, 80), String(t.sifre),
-          typeof t.sayfa === 'string' ? t.sayfa : '{}', t.yayinda ? 1 : 0, str(t.rozet, 60), Number(t.olusturma) || Date.now(), Number(t.guncelleme) || 0);
+          typeof t.sayfa === 'string' ? t.sayfa : '{}', t.yayinda ? 1 : 0, str(t.rozet, 60), Number(t.olusturma) || Date.now(), Number(t.guncelleme) || 0,
+          normCode(t.kod).length === 6 && !Q.teamByCode.get(normCode(t.kod)) ? normCode(t.kod) : newCode());
       }
+      // Öğrenciler (eski yedeklerde yoksa mevcutlar kalır, silinen takımlardakiler takımsız olur)
+      if (Array.isArray(b.ogrenciler)) {
+        db.exec("DELETE FROM ogrenciler; DELETE FROM oturumlar WHERE kim LIKE 's:%'");
+        for (const o of b.ogrenciler) {
+          const id = normalizeUser(o.id);
+          if (!id || !o.ad || !o.sifre || OQ.get.get(id) || Q.team.get(id)) continue;
+          const takim = o.takim && Q.team.get(o.takim) ? o.takim : null;
+          OQ.insert.run(id, str(o.ad, 60), String(o.sifre), takim, takim && o.kaptan ? 1 : 0, Number(o.katilma) || 0, Number(o.olusturma) || Date.now());
+        }
+      } else db.exec('UPDATE ogrenciler SET takim = NULL, kaptan = 0 WHERE takim NOT IN (SELECT id FROM takimlar)');
       CFG.finalistler = (Array.isArray(a.finalistler) ? a.finalistler : []).filter(id => Q.team.get(id));
       for (const r of Array.isArray(b.odaTakim) ? b.odaTakim : []) if (Q.team.get(r.takim) && CFG.odalar.some(o => o.id === r.oda)) Q.setRoom.run(r.takim, r.oda);
       // Mentörler ve mesajlar (eski yedeklerde yoksa yalnızca silinen takımlara ait olanlar temizlenir)
@@ -1819,7 +1959,7 @@ async function adminRoutes(req, res, url) {
   else if (m === 'PUT' && p === 'sifre') await setPassword(await readBody(req));
   else if (m === 'PUT' && p === 'bayraklar') {
     const b = await readBody(req);
-    for (const k of ['teslimAcik', 'oylamaAcik', 'sonuclarAcik', 'mentorKayit', 'genelSohbet', 'temaGizle', 'geriBildirimAcik']) if (k in b) CFG[k] = !!b[k];
+    for (const k of ['teslimAcik', 'oylamaAcik', 'sonuclarAcik', 'mentorKayit', 'genelSohbet', 'temaGizle', 'geriBildirimAcik', 'ogrenciKayit', 'ogrenciTakim']) if (k in b) CFG[k] = !!b[k];
     if ('yasakKelimeler' in b) CFG.yasakKelimeler = kelimeListesi(b.yasakKelimeler);
     if ('asama' in b) {
       if (!['on', 'final'].includes(b.asama)) fail(400, 'Geçersiz aşama');
@@ -1845,7 +1985,7 @@ async function adminRoutes(req, res, url) {
     const sifre = newPassword();
     Q.setTeamPw.run(await hashPwAsync(sifre), row.id);
     Q.deleteSessionsOf.run(`t:${row.id}`);
-    extra.yeni = [{ id: row.id, ad: row.ad, il: row.il, okul: row.okul, sifre }];
+    extra.yeni = [{ id: row.id, ad: row.ad, il: row.il, okul: row.okul, sifre, kod: row.kod }];
   } else if (m === 'DELETE' && p === 'takim') {
     removeTeam(url.searchParams.get('id'));
   } else if (m === 'POST' && p === 'mentor') {
@@ -1864,6 +2004,17 @@ async function adminRoutes(req, res, url) {
     extra.yeni = [{ id: row.id, ad: row.ad, alan: row.alan, sifre }];
   } else if (m === 'DELETE' && p === 'mentor') {
     removeMentor(url.searchParams.get('id'));
+  } else if (m === 'PUT' && p === 'ogrenci') {
+    // Öğrenciyi koda gerek olmadan bir takıma koyar ya da takımdan çıkarır (takim: '' ise takımsız)
+    const b = await readBody(req), o = getStudent(b.id), takim = b.takim ? getTeam(b.takim).id : null;
+    if (takim !== o.takim) tx(() => { leaveTeam(o); if (takim) joinTeam(getStudent(o.id), takim); });
+  } else if (m === 'POST' && p === 'ogrenci-sifre') {
+    const o = getStudent((await readBody(req)).id), sifre = newPassword();
+    OQ.setPw.run(await hashPwAsync(sifre), o.id);
+    Q.deleteSessionsOf.run(`s:${o.id}`);
+    extra.yeniSifre = { id: o.id, ad: o.ad, sifre };
+  } else if (m === 'DELETE' && p === 'ogrenci') {
+    removeStudent(url.searchParams.get('id'));
   } else if (m === 'PUT' && p === 'oy') {
     const { juri, takim, scores, note, tur } = await readBody(req);
     if (!JURY_NAME()[juri]) fail(400, 'Geçersiz jüri');
@@ -1909,19 +2060,28 @@ async function adminRoutes(req, res, url) {
 async function teamRoutes(req, res, url) {
   const p = url.pathname.slice('/api/takim/'.length), m = req.method;
 
+  // Aynı giriş formu: önce öğrenci hesabı, yoksa ortak takım hesabı
   if (m === 'POST' && p === 'giris') {
     const lim = loginLimited(req);
     const { kullanici, sifre } = await readBody(req);
-    const row = Q.team.get(normalizeUser(kullanici));
-    if (!row || !(await checkPw(String(sifre || ''), row.sifre))) { lim.bad(); fail(401, 'Kullanıcı adı veya şifre hatalı'); }
+    const id = normalizeUser(kullanici), ogr = OQ.get.get(id), row = !ogr && Q.team.get(id);
+    if (!(ogr || row) || !(await checkPw(String(sifre || ''), (ogr || row).sifre))) { lim.bad(); fail(401, 'Kullanıcı adı veya şifre hatalı'); }
     lim.ok();
-    return json(res, 200, { token: newSession(`t:${row.id}`, TTL.takim), id: row.id });
+    return json(res, 200, ogr ? { token: newSession(`s:${ogr.id}`, TTL.ogrenci), id: ogr.id, ogrenci: true }
+      : { token: newSession(`t:${row.id}`, TTL.takim), id: row.id });
   }
+  if (m === 'POST' && p === 'cikis') { const t = tokenOf(req); if (t) Q.deleteSession.run(tokenHash(t)); return json(res, 200, { ok: true }); }
   const who = teamOf(req, url);
 
-  if (m === 'POST' && p === 'cikis') { Q.deleteSession.run(tokenHash(tokenOf(req))); return json(res, 200, { ok: true }); }
-  const view = () => ({ ...teamView(getTeam(who.id)), yonetici: who.admin, mentor: !!who.mentor });
+  const view = () => ({
+    ...teamView(getTeam(who.id)), yonetici: who.admin, mentor: !!who.mentor,
+    ogrenci: who.ogrenci ? { id: who.ogrenci.id, ad: who.ogrenci.ad, kaptan: !!OQ.get.get(who.ogrenci.id)?.kaptan } : null
+  });
+  // Ekibi yönetebilen: yönetim, takımın mentörü ya da kaptan
+  const kaptan = () => who.admin || who.mentor || !!(who.ogrenci && OQ.get.get(who.ogrenci.id)?.kaptan);
+  const ekipUyesi = id => { const o = getStudent(id); if (o.takim !== who.id) fail(404, 'Öğrenci bu takımda değil'); return o; };
   if (m === 'GET' && p === 'ben') return json(res, 200, view());
+  let extra = {};
   if (m === 'PUT' && p === 'sayfa') {
     if (!who.admin && !CFG.teslimAcik) fail(403, 'Teslim süresi doldu; sayfa artık düzenlenemez');
     const row = getTeam(who.id);
@@ -1938,13 +2098,76 @@ async function teamRoutes(req, res, url) {
   } else if (m === 'PUT' && p === 'sifre') {
     if (who.admin || who.mentor) fail(400, 'Takım şifresi yönetim ya da mentör panelinden sıfırlanır');
     const { eski, yeni } = await readBody(req);
-    const row = getTeam(who.id);
-    if (!(await checkPw(String(eski || ''), row.sifre))) fail(400, 'Mevcut şifre hatalı');
+    // Öğrenci kendi hesabının şifresini, ortak takım hesabı takımın şifresini değiştirir
+    const hesap = who.ogrenci ? getStudent(who.ogrenci.id) : getTeam(who.id);
+    if (!(await checkPw(String(eski || ''), hesap.sifre))) fail(400, 'Mevcut şifre hatalı');
     if (String(yeni || '').length < 6) fail(400, 'Yeni şifre en az 6 karakter olmalı');
-    Q.setTeamPw.run(await hashPwAsync(yeni), row.id);
+    (who.ogrenci ? OQ.setPw : Q.setTeamPw).run(await hashPwAsync(yeni), hesap.id);
+  } else if (m === 'POST' && p === 'ayril') {
+    if (!who.ogrenci) fail(400, 'Yalnızca öğrenci hesabıyla takımdan ayrılınabilir');
+    if (!CFG.teslimAcik) fail(403, 'Teslim süresi doldu; ekip artık değiştirilemez');
+    leaveTeam(getStudent(who.ogrenci.id));
+    return json(res, 200, { ok: true, takimsiz: true });
+  } else if (m === 'POST' && p === 'uye-cikar') {
+    if (!kaptan()) fail(403, 'Ekipten öğrenci çıkarmayı yalnızca kaptan, mentör ya da yönetim yapabilir');
+    if (!who.admin && !who.mentor && !CFG.teslimAcik) fail(403, 'Teslim süresi doldu; ekip artık değiştirilemez');
+    const o = ekipUyesi((await readBody(req)).id);
+    if (o.id === who.ogrenci?.id) fail(400, 'Kendinizi çıkaramazsınız; "Takımdan ayrıl"ı kullanın');
+    leaveTeam(o);
+  } else if (m === 'POST' && p === 'kaptan') {
+    if (!kaptan()) fail(403, 'Kaptanlığı yalnızca kaptan, mentör ya da yönetim devredebilir');
+    const o = ekipUyesi((await readBody(req)).id);
+    tx(() => { db.prepare('UPDATE ogrenciler SET kaptan = 0 WHERE takim = ?').run(who.id); OQ.setCaptain.run(1, o.id); });
+  } else if (m === 'POST' && p === 'kod-yenile') {
+    if (!kaptan()) fail(403, 'Katılım kodunu yalnızca kaptan, mentör ya da yönetim yenileyebilir');
+    Q.setCode.run(newCode(), who.id);
+  } else if (m === 'POST' && p === 'uye-sifre') {
+    // Şifresini unutan öğrenci: mentör ya da yönetim yeni şifre üretir
+    if (!who.admin && !who.mentor) fail(403, 'Öğrenci şifresini mentör ya da yönetim sıfırlar');
+    const o = ekipUyesi((await readBody(req)).id), sifre = newPassword();
+    OQ.setPw.run(await hashPwAsync(sifre), o.id);
+    Q.deleteSessionsOf.run(`s:${o.id}`);
+    extra.yeniSifre = { id: o.id, ad: o.ad, sifre };
   } else fail(404, 'Bulunamadı');
 
-  return json(res, 200, view());
+  return json(res, 200, { ...view(), ...extra });
+}
+
+// ---- Öğrenci hesabı: kayıt, takım kurma, katılım koduyla katılma ----
+// Takımı olan öğrenci takım panelini /api/takim/* ile kullanır; buradaki uç noktalar takımsız öğrenci içindir.
+async function studentRoutes(req, res, url) {
+  const p = url.pathname.slice('/api/ogrenci/'.length), m = req.method;
+
+  if (m === 'POST' && p === 'kayit') {
+    if (!CFG.ogrenciKayit) fail(403, 'Öğrenci kaydı şu anda kapalı. Hesabınızı yönetimden isteyin.');
+    postLimited('kayit:' + clientIp(req), 20, 'Çok fazla kayıt denemesi, biraz bekleyin');
+    const o = await createStudent(await readBody(req));
+    return json(res, 200, { token: newSession(`s:${o.id}`, TTL.ogrenci), id: o.id, ogrenci: true });
+  }
+  const k = sessionOf(req), ogr = k && k.startsWith('s:') && OQ.get.get(k.slice(2));
+  if (!ogr) fail(401, 'Oturum geçersiz, tekrar giriş yapın');
+  const state = () => {
+    const o = OQ.get.get(ogr.id);
+    return { ogrenci: { id: o.id, ad: o.ad }, takim: o.takim || null, ogrenciTakim: CFG.ogrenciTakim, teslimAcik: CFG.teslimAcik,
+      max: MAX_OGRENCI, event: pubEvent(), tema: CFG.tema };
+  };
+  if (m === 'GET' && p === 'ben') return json(res, 200, state());
+  if (m === 'POST' && (p === 'katil' || p === 'takim-kur')) {
+    if (!CFG.teslimAcik) fail(403, 'Teslim süresi doldu; artık takım kurulamaz ya da takıma katılınamaz');
+    postLimited('katil:' + ogr.id, 10, 'Çok fazla deneme, biraz bekleyin');
+    const b = await readBody(req);
+    if (p === 'katil') {
+      const t = Q.teamByCode.get(normCode(b.kod));
+      if (!t) fail(404, 'Bu koda ait takım bulunamadı. Kodu takım arkadaşınızdan ya da mentörünüzden kontrol edin.');
+      joinTeam(ogr, t.id);
+    } else {
+      if (!CFG.ogrenciTakim) fail(403, 'Takımları yönetim ve mentörler açıyor; takımınızın katılım kodunu onlardan isteyin');
+      if (ogr.takim) fail(400, 'Zaten bir takımdasınız');
+      tx(() => { const t = createTeam({ ad: b.ad, il: b.il, okul: b.okul, danisman: b.danisman }); joinTeam(ogr, t.id); });
+    }
+    return json(res, 200, state());
+  }
+  fail(404, 'Bulunamadı');
 }
 
 // ---- Mentör paneli ----
@@ -1956,18 +2179,19 @@ function mentorOf(req) {
 }
 function mentorState(mentor) {
   const now = Date.now();
-  const sessions = Object.fromEntries(Q.sessionCounts.all(now).map(r => [r.kim, r.n]));
+  const sessions = sessionCounts(now);
   const ids = new Set(mentorTeams(mentor.id));
   return {
     ben: { id: mentor.id, ad: mentor.ad, alan: mentor.alan },
-    event: pubEvent(), tema: CFG.tema, teslimAcik: CFG.teslimAcik, mentorKayit: CFG.mentorKayit, simdi: Date.now(),
+    event: pubEvent(), tema: CFG.tema, teslimAcik: CFG.teslimAcik, mentorKayit: CFG.mentorKayit, simdi: Date.now(), maxOgrenci: MAX_OGRENCI,
     takimSayisi: Q.teams.all().length,
     takimlar: Q.teams.all().filter(r => ids.has(r.id)).map(row => {
       const p = pageOf(row);
       return {
         id: row.id, ad: row.ad, il: row.il, okul: row.okul, danisman: row.danisman, yayinda: !!row.yayinda,
         baslik: p.baslik || '', kisa: p.kisa || '', kapak: p.kapak || null, oyun: !!p.oyun, indir: !!p.indir, video: !!p.video,
-        uyeler: p.uyeler || [], ilerleme: pageProgress(p), guncelleme: row.guncelleme, cevrimici: !!sessions[`t:${row.id}`]
+        uyeler: p.uyeler || [], ilerleme: pageProgress(p), guncelleme: row.guncelleme, cevrimici: !!sessions[`t:${row.id}`],
+        kod: row.kod, ogrenciler: studentsOf(row.id)
       };
     })
   };
@@ -2001,7 +2225,7 @@ async function mentorRoutes(req, res, url) {
     const sifre = newPassword();
     Q.setTeamPw.run(await hashPwAsync(sifre), row.id);
     Q.deleteSessionsOf.run(`t:${row.id}`);
-    extra.yeni = [{ id: row.id, ad: row.ad, il: row.il, okul: row.okul, sifre }];
+    extra.yeni = [{ id: row.id, ad: row.ad, il: row.il, okul: row.okul, sifre, kod: row.kod }];
   } else if (m === 'PUT' && p === 'sifre') {
     const { eski, yeni } = await readBody(req);
     if (!(await checkPw(String(eski || ''), mentor.sifre))) fail(400, 'Mevcut şifre hatalı');
@@ -2170,10 +2394,11 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/takim/')) return await teamRoutes(req, res, url);
     if (url.pathname.startsWith('/api/juri/')) return await juryRoutes(req, res, url);
     if (url.pathname.startsWith('/api/mentor/')) return await mentorRoutes(req, res, url);
+    if (url.pathname.startsWith('/api/ogrenci/')) return await studentRoutes(req, res, url);
     if (url.pathname === '/api/mesaj' || url.pathname.startsWith('/api/mesaj/')) return await messageRoutes(req, res, url);
     if (req.method === 'GET' && url.pathname.startsWith('/ek/')) return serveAttachment(req, res, url);
 
-    if (req.method === 'GET' && url.pathname === '/api/durum') return json(res, 200, { event: pubEvent(), tema: CFG.tema, simdi: Date.now() });
+    if (req.method === 'GET' && url.pathname === '/api/durum') return json(res, 200, { event: pubEvent(), tema: CFG.tema, simdi: Date.now(), ogrenciKayit: CFG.ogrenciKayit });
 
     if (req.method === 'GET' && url.pathname === '/api/vitrin') {
       const rows = Q.teams.all().filter(isPublic);
@@ -2204,7 +2429,7 @@ const server = http.createServer(async (req, res) => {
       const row = Q.team.get(normalizeUser(url.pathname.slice('/api/urun/'.length)));
       // Yayında olmayan ürünü yalnızca kendi takımı, jüri ve yönetici görür (önizleme)
       const k = sessionOf(req);
-      const allowed = row && (isPublic(row) || k === '@admin' || k === `t:${row.id}` || (k && k.startsWith('j:') && row.yayinda) ||
+      const allowed = row && (isPublic(row) || k === '@admin' || k === `t:${row.id}` || (k && k.startsWith('s:') && OQ.get.get(k.slice(2))?.takim === row.id) || (k && k.startsWith('j:') && row.yayinda) ||
         (k && k.startsWith('m:') && isAssigned(k.slice(2), row.id)));
       if (!allowed) return json(res, 404, { error: 'Ürün bulunamadı' });
       return json(res, 200, { urun: productOf(row), event: pubEvent(), tema: CFG.tema });

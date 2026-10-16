@@ -66,6 +66,23 @@
   .galeri .ekle:hover { border-color: var(--accent); color: var(--accent-text); }
 
   .sayac { float: right; font-weight: 400; color: var(--muted); font-size: 12px; }
+
+  .giris .gecis { text-align: center; margin: 14px 0 0; font-size: 14px; }
+  .giris .ayrac { display: flex; align-items: center; gap: 10px; margin: 20px 0 4px; color: var(--muted); font-size: 13px; }
+  .giris .ayrac::before, .giris .ayrac::after { content: ''; flex: 1; border-top: 1px solid var(--line); }
+  .giris .kod-gir { text-transform: uppercase; letter-spacing: .18em; font-weight: 700; text-align: center; font-size: 18px; }
+  .kod-kutu { display: flex; align-items: center; gap: 6px; background: var(--panel2); border-radius: var(--yaricap-kutu); padding: 8px 10px; }
+  .kod-kutu small { color: var(--muted); font-size: 12px; }
+  .kod-kutu b { font-size: 18px; letter-spacing: .14em; font-family: ui-monospace, Consolas, monospace; }
+  .ekip-liste { list-style: none; margin: 12px 0 0; padding: 0; font-size: 14px; }
+  .ekip-liste li { display: flex; align-items: center; gap: 4px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .ekip-liste li:first-child { border-top: 0; }
+  .ekip-liste .ad { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .ekip-liste .ad small { display: block; color: var(--muted); font-size: 12px; }
+  .ekip-liste .kaptan-ik { width: 14px; height: 14px; color: var(--warn); vertical-align: -2px; }
+  .ekip-liste .bos { color: var(--muted); font-size: 13px; }
+  .ekip-eylem { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .ekip-eylem .btn { flex: 1; }
   fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 </style>
 </head>
@@ -75,15 +92,61 @@
   <form class="kart" id="girisForm">
     <img class="logo" src="genc.png" alt="">
     <h1>Takım girişi</h1>
-    <p class="alt">Oyun sayfanızı hazırlamak için yöneticinin verdiği bilgilerle giriş yapın.</p>
+    <p class="alt">Kendi öğrenci hesabınla giriş yap. Takımın ortak hesabıyla da girebilirsin.</p>
+    <div class="bilgi k hidden" id="gKodBilgi" style="margin-top:10px"></div>
     <label class="l" for="gKul">Kullanıcı adı</label>
     <input type="text" id="gKul" autocomplete="username" autocapitalize="none" required>
     <label class="l" for="gSif">Şifre</label>
     <input type="password" id="gSif" autocomplete="current-password" required>
     <button class="btn" type="submit">Giriş yap</button>
     <div class="hata" id="gHata" role="alert"></div>
+    <p class="gecis" id="kayitGecis">Hesabın yok mu? <a href="#" id="kayitAc">Kayıt ol</a></p>
     <a class="geri" href="./">← Oyun vitrinine dön</a>
   </form>
+  <form class="kart hidden" id="kayitForm">
+    <img class="logo" src="genc.png" alt="">
+    <h1>Öğrenci kaydı</h1>
+    <p class="alt">Her öğrenci kendi hesabını açar. Sonra takımını kurarsın ya da takım arkadaşının paylaştığı katılım koduyla takıma katılırsın.</p>
+    <label class="l" for="kAd">Adın ve soyadın <small>(takım sayfasında ve mesajlarda görünür)</small></label>
+    <input type="text" id="kAd" maxlength="60" autocomplete="name" required>
+    <label class="l" for="kKul">Kullanıcı adı <small>(giriş için; Türkçe harf ve boşluk kaldırılır)</small></label>
+    <input type="text" id="kKul" maxlength="40" autocomplete="username" autocapitalize="none" required>
+    <label class="l" for="kSif">Şifre <small>(en az 6 karakter)</small></label>
+    <input type="password" id="kSif" minlength="6" autocomplete="new-password" required>
+    <button class="btn" type="submit">Kayıt ol</button>
+    <div class="hata" id="kHata" role="alert"></div>
+    <p class="gecis">Hesabın var mı? <a href="#" id="girisDon">Giriş yap</a></p>
+  </form>
+</div>
+
+<div id="takimsizEkran" class="giris hidden">
+  <div class="kart">
+    <img class="logo" src="genc.png" alt="">
+    <h1 id="tsBaslik">Takımına katıl</h1>
+    <p class="alt">Oyun sayfasını hazırlamak için önce bir takımda olmalısın.</p>
+    <div class="bilgi u hidden" id="tsKilit" style="margin-top:10px"></div>
+    <form id="katilForm">
+      <label class="l" for="katilKod">Katılım kodu <small>(takım arkadaşından ya da mentöründen al)</small></label>
+      <input type="text" id="katilKod" class="kod-gir" maxlength="9" placeholder="K7M-Q2X" autocomplete="off" autocapitalize="characters" required>
+      <button class="btn" type="submit">Takıma katıl</button>
+      <div class="hata" id="katilHata" role="alert"></div>
+    </form>
+    <div id="kurAlan">
+      <div class="ayrac">ya da</div>
+      <button class="btn ghost" type="button" id="kurAc" style="margin-top:8px">Yeni takım kur</button>
+      <form id="kurForm" class="hidden">
+        <p class="alt" style="text-align:left;margin-top:12px">Takımı kuran öğrenci kaptan olur. Kurduktan sonra katılım kodunu takım arkadaşlarınla paylaş (en fazla <span id="tsMax">5</span> öğrenci).</p>
+        <label class="l" for="kurAd">Takım adı</label><input type="text" id="kurAd" maxlength="80" required>
+        <label class="l" for="kurIl">İl</label><input type="text" id="kurIl" maxlength="40">
+        <label class="l" for="kurOkul">Okul</label><input type="text" id="kurOkul" maxlength="120">
+        <label class="l" for="kurDan">Danışman öğretmen <small>(isteğe bağlı)</small></label><input type="text" id="kurDan" maxlength="80">
+        <button class="btn" type="submit">Takımı kur</button>
+        <div class="hata" id="kurHata" role="alert"></div>
+      </form>
+    </div>
+    <p class="alt hidden" id="kurKapali" style="margin-top:16px">Takımları yönetim ve mentörler açıyor. Takımının katılım kodunu onlardan iste.</p>
+    <a class="geri" href="#" id="tsCikis">Çıkış yap</a>
+  </div>
 </div>
 
 <div id="panel" class="hidden">
@@ -175,7 +238,7 @@
 
         <section class="kart">
           <h2><span class="no">5</span> Ekip</h2>
-          <p>Takım üyeleri ve görevleri (programlama, tasarım, ses, hikâye…). Danışman öğretmen bilgisi yönetici tarafından girilir.</p>
+          <p>Takım üyeleri ve görevleri (programlama, tasarım, ses, hikâye…). Katılım koduyla takıma giren öğrenciler buraya kendiliğinden eklenir; görevlerini siz yazın. Danışman öğretmen bilgisi yönetici tarafından girilir.</p>
           <div id="uyeler"></div>
           <button class="btn ghost sm" type="button" id="uyeEkle" style="margin-top:10px"><svg class="ik"><use href="ikonlar.svg#plus"/></svg> Üye ekle</button>
         </section>
@@ -200,6 +263,18 @@
         <div class="kart kaydet-alan" id="kaydetAlan">
           <button class="btn lg" type="button" id="kaydet"><svg class="ik"><use href="ikonlar.svg#save"/></svg> Kaydet</button>
           <p id="kaydetDurum">Tüm değişiklikler kayıtlı</p>
+        </div>
+        <div class="kart" id="ekipKart">
+          <h3>Ekip <span id="ekipSayi" style="float:right;color:var(--muted);letter-spacing:0"></span></h3>
+          <div class="kod-kutu"><div style="flex:1;min-width:0"><small>Katılım kodu</small><br><b id="ekipKod"></b></div>
+            <button class="ikbtn" type="button" id="kodKopya" title="Kodu kopyala" aria-label="Kodu kopyala"><svg class="ik"><use href="ikonlar.svg#copy"/></svg></button>
+            <button class="ikbtn" type="button" id="linkKopya" title="Katılım bağlantısını kopyala" aria-label="Katılım bağlantısını kopyala"><svg class="ik"><use href="ikonlar.svg#link"/></svg></button></div>
+          <p style="font-size:13px;color:var(--muted);margin:8px 0 0">Takım arkadaşların kendi hesabını açıp bu kodla katılır.</p>
+          <ul class="ekip-liste" id="ekipListe"></ul>
+          <div class="ekip-eylem">
+            <button class="btn ghost sm hidden" type="button" id="kodYenile" title="Yeni kod üretilir; eski kod artık çalışmaz"><svg class="ik"><use href="ikonlar.svg#rotate-ccw"/></svg> Kodu yenile</button>
+            <button class="btn ghost sm hidden" type="button" id="ayril"><svg class="ik"><use href="ikonlar.svg#log-out"/></svg> Takımdan ayrıl</button>
+          </div>
         </div>
         <div class="kart hidden" id="mentorKart">
           <h3>Mentörleriniz</h3>
@@ -246,6 +321,9 @@ const yoneticiTakim = PARAM.get('takim');
 const ROL = yoneticiTakim ? (PARAM.get('rol') === 'mentor' ? 'mentor' : 'yonetim') : 'takim';
 const PANEL = ROL === 'mentor' ? 'mentor' : 'yonetim';
 const ek = yoneticiTakim ? `takim=${encodeURIComponent(yoneticiTakim)}` : '';
+// Katılım bağlantısı: /takim?kod=K7MQ2X (giriş/kayıttan sonra kod kutusu dolu gelir)
+const DAVET = (PARAM.get('kod') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+const kodGoster = k => k ? k.slice(0, 3) + '-' + k.slice(3) : '';
 const yol = (p, q = '') => `api/takim/${p}` + ([q, ek].filter(Boolean).length ? '?' + [q, ek].filter(Boolean).join('&') : '');
 
 let D = null;       // sunucudan gelen takım durumu
@@ -254,7 +332,59 @@ let kilitli = false;
 
 const ALANLAR = ['baslik', 'kisa', 'etiketler', 'baglanti', 'aciklama', 'kontroller', 'video', 'krediler', 'oyunEn', 'oyunBoy'];
 
-function girisGoster() { $('girisEkran').classList.remove('hidden'); $('panel').classList.add('hidden'); $('gKul').focus(); }
+function girisGoster() {
+  $('girisEkran').classList.remove('hidden'); $('panel').classList.add('hidden'); $('takimsizEkran').classList.add('hidden');
+  if (DAVET) { $('gKodBilgi').classList.remove('hidden'); $('gKodBilgi').innerHTML = `${ik('users')} <b>${kodGoster(DAVET)}</b> koduyla takıma katılmak için giriş yap ya da kayıt ol.`; }
+  $('gKul').focus();
+  // Öğrenci kaydı kapalıysa "Kayıt ol" bağlantısı gizlenir
+  api('GET', 'api/durum').then(d => { window.temaUygula(d.tema); $('kayitGecis').classList.toggle('hidden', d.ogrenciKayit === false); }).catch(() => {});
+}
+function kayitGoster(v) {
+  $('girisForm').classList.toggle('hidden', v); $('kayitForm').classList.toggle('hidden', !v);
+  $(v ? 'kAd' : 'gKul').focus();
+}
+$('kayitAc').onclick = e => { e.preventDefault(); kayitGoster(true); };
+$('girisDon').onclick = e => { e.preventDefault(); kayitGoster(false); };
+
+// ---- Takımı olmayan öğrenci: koduyla katılır ya da yeni takım kurar ----
+async function takimsizGoster() {
+  let O;
+  try { O = await api('GET', 'api/ogrenci/ben', undefined, 'takim'); }
+  catch (e) { if (e.status === 401) { EJ.jetonYaz('takim', null); return girisGoster(); } return bildir(e.message, 'h'); }
+  if (O.takim) return basla();
+  window.temaUygula(O.tema);
+  $('girisEkran').classList.add('hidden'); $('panel').classList.add('hidden'); $('takimsizEkran').classList.remove('hidden');
+  $('tsBaslik').textContent = `Merhaba, ${O.ogrenci.ad.split(' ')[0]}`;
+  $('tsMax').textContent = O.max;
+  $('kurAlan').classList.toggle('hidden', !O.ogrenciTakim);
+  $('kurKapali').classList.toggle('hidden', O.ogrenciTakim);
+  $('tsKilit').classList.toggle('hidden', O.teslimAcik);
+  $('tsKilit').innerHTML = `${ik('lock')} Teslim süresi doldu; artık takım kurulamaz ya da takıma katılınamaz.`;
+  $('katilForm').querySelector('button').disabled = $('kurForm').querySelector('button').disabled = !O.teslimAcik;
+  if (DAVET && !$('katilKod').value) $('katilKod').value = kodGoster(DAVET);
+  $('katilKod').focus();
+}
+$('katilForm').onsubmit = async e => {
+  e.preventDefault(); $('katilHata').textContent = '';
+  try {
+    await api('POST', 'api/ogrenci/katil', { kod: $('katilKod').value }, 'takim');
+    if (DAVET) history.replaceState(null, '', location.pathname);
+    bildir('Takıma katıldın', 'o'); basla();
+  } catch (err) { $('katilHata').textContent = err.message; }
+};
+$('kurAc').onclick = () => { $('kurAc').classList.add('hidden'); $('kurForm').classList.remove('hidden'); $('kurAd').focus(); };
+$('kurForm').onsubmit = async e => {
+  e.preventDefault(); $('kurHata').textContent = '';
+  try {
+    await api('POST', 'api/ogrenci/takim-kur', { ad: $('kurAd').value, il: $('kurIl').value, okul: $('kurOkul').value, danisman: $('kurDan').value }, 'takim');
+    bildir('Takımın kuruldu. Katılım kodunu takım arkadaşlarınla paylaş.', 'o'); basla();
+  } catch (err) { $('kurHata').textContent = err.message; }
+};
+$('tsCikis').onclick = async e => {
+  e.preventDefault();
+  try { await api('POST', 'api/takim/cikis', {}, 'takim'); } catch {}
+  EJ.jetonYaz('takim', null); location.reload();
+};
 
 async function basla() {
   if (!EJ.jeton(ROL)) {
@@ -263,12 +393,13 @@ async function basla() {
   }
   try { D = await api('GET', yol('ben'), undefined, ROL); }
   catch (e) {
+    if (e.status === 409 && !yoneticiTakim) return takimsizGoster();
     if (e.status === 401) { if (!yoneticiTakim) { EJ.jetonYaz(ROL, null); return girisGoster(); } location.href = PANEL; return; }
     document.body.innerHTML = `<p class="bos">Yüklenemedi: ${esc(e.message)}</p>`; return;
   }
   window.temaUygula(D.tema);
-  $('girisEkran').classList.add('hidden'); $('panel').classList.remove('hidden');
-  formuDoldur(); dosyalariCiz(); ustCiz(); kontrolCiz();
+  $('girisEkran').classList.add('hidden'); $('takimsizEkran').classList.add('hidden'); $('panel').classList.remove('hidden');
+  formuDoldur(); dosyalariCiz(); ustCiz(); kontrolCiz(); ekipCiz();
   if (!window.sayacDur && D.teslimAcik) window.sayacDur = EJ.geriSayim($('teslimSayac'), D.event, D.simdi, { kisa: true, once: 'Etkinliğin başlamasına', sure: 'Teslime kalan süre' });
   if (ROL === 'takim' && !sohbet) {
     sohbet = EJSohbet({ kok: $('sohbet'), rol: 'takim', odaklan: () => gorunum('mesaj'), degisti: n => {
@@ -301,7 +432,7 @@ function ustCiz() {
   EJ.marka(D.event.ad);
   // Üst menüde, vitrindeki gibi giriş yapılan hesabın adı (yönetici/mentör takımı düzenlerken gösterilmez)
   $('oturumAd').classList.toggle('hidden', !!yoneticiTakim);
-  $('oturumAd').innerHTML = `${ik('users')}${esc(D.ad)}`;
+  $('oturumAd').innerHTML = `${ik('users')}${D.ogrenci ? `${esc(D.ogrenci.ad)} · ` : ''}${esc(D.ad)}`;
   $('takimAlt').textContent = [D.okul, D.il, D.danisman && `Danışman: ${D.danisman}`].filter(Boolean).join(' · ');
   $('gorBtn').href = $('sayfamMenu').href = 'oyun/' + encodeURIComponent(D.id);
   // Teslim kapanınca ekip üyeleri için katılım belgesi yazdırılabilir
@@ -562,6 +693,67 @@ function kontrolCiz() {
     `<li class="${ok ? 'ok' : ''}"><span class="d">${ok ? ik('check') : ''}</span><span>${ad}${!ok && not ? ` <small>(${not})</small>` : ''}</span></li>`).join('');
 }
 
+// ---- Ekip: katılım kodu ve takımdaki öğrenci hesapları ----
+// Kaptan, takımın mentörü ve yönetim öğrenci çıkarabilir, kaptanlığı devredebilir, kodu yenileyebilir.
+// Unutulan öğrenci şifresini mentör ya da yönetim sıfırlar.
+const davetLinki = () => location.origin + location.pathname.replace(/takim\/?$/, '') + 'takim?kod=' + D.ekip.kod;
+function ekipCiz() {
+  const E = D.ekip, ben = D.ogrenci, gorevli = D.yonetici || D.mentor, yonet = gorevli || ben?.kaptan;
+  const degisir = gorevli || D.teslimAcik;
+  $('ekipSayi').textContent = `${E.ogrenciler.length} / ${E.max}`;
+  $('ekipKod').textContent = kodGoster(E.kod);
+  $('ekipListe').innerHTML = E.ogrenciler.length ? E.ogrenciler.map(o => `<li>
+      <span class="ad">${o.kaptan ? ik('star', 'kaptan-ik') + ' ' : ''}<b>${esc(o.ad)}</b>${o.id === ben?.id ? ' <small style="display:inline">(sen)</small>' : ''}
+        <small>${esc(o.id)}${o.kaptan ? ' · kaptan' : ''}</small></span>
+      ${yonet && !o.kaptan ? `<button class="ikbtn" type="button" data-kaptan="${esc(o.id)}" title="Kaptan yap" aria-label="${esc(o.ad)} kaptan olsun">${ik('star')}</button>` : ''}
+      ${gorevli ? `<button class="ikbtn" type="button" data-usifre="${esc(o.id)}" title="Şifresini sıfırla" aria-label="${esc(o.ad)} şifresini sıfırla">${ik('key-round')}</button>` : ''}
+      ${yonet && degisir && o.id !== ben?.id ? `<button class="ikbtn" type="button" data-cikar="${esc(o.id)}" title="Ekipten çıkar" aria-label="${esc(o.ad)} ekipten çıkar">${ik('x')}</button>` : ''}
+    </li>`).join('')
+    : `<li class="bos">Henüz öğrenci hesabıyla katılan yok. Kodu takım arkadaşlarınla paylaş.</li>`;
+  $('kodYenile').classList.toggle('hidden', !yonet);
+  $('ayril').classList.toggle('hidden', !ben || !D.teslimAcik);
+}
+function ekipSonuc(d) {
+  // Ekip değişince sunucu sayfanın Ekip listesini de günceller; formda kaydedilmemiş değişiklik yoksa form yenilenir
+  if (kirli) D = { ...D, ekip: d.ekip }; else { D = d; formuDoldur(); }
+  ekipCiz(); kontrolCiz();
+}
+const kopyala = (metin, mesaj) => navigator.clipboard.writeText(metin).then(() => bildir(mesaj, 'o'), () => prompt('Kopyalayın:', metin));
+$('kodKopya').onclick = () => kopyala(kodGoster(D.ekip.kod), 'Katılım kodu kopyalandı');
+$('linkKopya').onclick = () => kopyala(davetLinki(), 'Katılım bağlantısı kopyalandı');
+$('kodYenile').onclick = async () => {
+  if (!confirm('Yeni katılım kodu üretilecek; eski kod artık çalışmayacak. Takımdaki öğrenciler etkilenmez. Devam edilsin mi?')) return;
+  try { ekipSonuc(await api('POST', yol('kod-yenile'), {}, ROL)); bildir('Yeni kod: ' + kodGoster(D.ekip.kod), 'o'); } catch (err) { bildir(err.message, 'h'); }
+};
+$('ayril').onclick = async () => {
+  if (!confirm(`${D.ad} takımından ayrılmak istediğine emin misin? Tekrar katılmak için katılım kodu gerekir.`)) return;
+  try { await api('POST', yol('ayril'), {}, ROL); kirli = false; location.reload(); } catch (err) { bildir(err.message, 'h'); }
+};
+$('ekipListe').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const o = D.ekip.ogrenciler.find(x => x.id === (b.dataset.cikar || b.dataset.kaptan || b.dataset.usifre));
+  try {
+    if (b.dataset.cikar) {
+      if (!confirm(`${o.ad} ekipten çıkarılsın mı? Hesabı silinmez; yeniden katılmak için kod gerekir.`)) return;
+      ekipSonuc(await api('POST', yol('uye-cikar'), { id: o.id }, ROL)); bildir('Ekipten çıkarıldı', 'o');
+    } else if (b.dataset.kaptan) {
+      if (!confirm(`Kaptanlık ${o.ad} kişisine geçsin mi?`)) return;
+      ekipSonuc(await api('POST', yol('kaptan'), { id: o.id }, ROL)); bildir('Kaptan değişti', 'o');
+    } else if (b.dataset.usifre) {
+      if (!confirm(`${o.ad} için yeni şifre üretilecek; eski şifre çalışmayacak. Devam edilsin mi?`)) return;
+      const d = await api('POST', yol('uye-sifre'), { id: o.id }, ROL);
+      ekipSonuc(d);
+      prompt(`${d.yeniSifre.ad} öğrencisinin yeni giriş bilgileri. Kopyalayıp öğrenciye iletin; bir daha gösterilmez.`, `Kullanıcı adı: ${d.yeniSifre.id}  Şifre: ${d.yeniSifre.sifre}`);
+    }
+  } catch (err) { bildir(err.message, 'h'); }
+});
+// Takım arkadaşı katılınca ya da ayrılınca ekip listesi kendiliğinden güncellenir
+setInterval(async () => {
+  if (!D || document.hidden || $('panel').classList.contains('hidden')) return;
+  try { const d = await api('GET', yol('ben'), undefined, ROL); if (JSON.stringify(d.ekip) !== JSON.stringify(D.ekip)) ekipSonuc(d); }
+  catch (e) { if (e.status === 409 && !yoneticiTakim) { kirli = false; location.reload(); } }
+}, 30e3);
+
 // ---- Giriş / çıkış / şifre ----
 $('girisForm').onsubmit = async e => {
   e.preventDefault();
@@ -572,6 +764,17 @@ $('girisForm').onsubmit = async e => {
     $('gSif').value = '';
     basla();
   } catch (err) { $('gHata').textContent = err.message; }
+};
+$('kayitForm').onsubmit = async e => {
+  e.preventDefault();
+  $('kHata').textContent = '';
+  try {
+    const d = await api('POST', 'api/ogrenci/kayit', { ad: $('kAd').value, kullanici: $('kKul').value, sifre: $('kSif').value });
+    EJ.jetonYaz('takim', d.token);
+    $('kSif').value = '';
+    bildir(`Hesabın açıldı. Kullanıcı adın: ${d.id}`, 'o');
+    basla();
+  } catch (err) { $('kHata').textContent = err.message; }
 };
 $('cikis').onclick = async e => {
   e.preventDefault();

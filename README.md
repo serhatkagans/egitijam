@@ -34,17 +34,30 @@ Yapı ve görsel dil `../jürigenctek` uygulamasıyla aynıdır (GençTek kırm�
 1. **Yönetim → Takımlar → Toplu ekle.** Excel'den "Takım adı, İl, Okul, Danışman" sütunlarını
    yapıştırın. Kullanıcı adları ve şifreler üretilir. Şifreler **yalnızca bir kez** gösterilir;
    CSV olarak indirip danışman öğretmenlere iletin. Kaybolan şifre "Şifre sıfırla" ile yenilenir.
-2. **Takımlar sayfalarını hazırlar** (`/takim`): oyun adı, kısa tanıtım, kapak, web sürümü (ZIP),
+   CSV'de her takımın **öğrenci katılım kodu** da vardır.
+   **Mentör atayın:** Yönetim → Mentörler'de mentörün takımlarını seçin. Takımlar tablosunda mentörü
+   olmayan takım "Mentör atanmadı" diye işaretlenir ("Mentörü atanmamış" süzgeci ile listelenir).
+   Takım panelinde "Mentörleriniz" kartı, mentör panelinde "Takımlarım" listesi atamayı gösterir.
+2. **Öğrenciler takımda toplanır** (`/takim`): her öğrenci "Kayıt ol" ile kendi hesabını açar.
+   Bir öğrenci takımı kurar (kaptan olur) ya da yönetimin/mentörün açtığı takımın kodunu girer;
+   diğerleri aynı **katılım koduyla** (ör. `K7M-Q2X`) katılır. Takım başına en fazla 5 öğrenci.
+   Kod, takım panelindeki **Ekip** kartında görünür; `/takim?kod=K7MQ2X` bağlantısı kodu hazır doldurur.
+   Kaptan, mentör ve yönetim ekipten öğrenci çıkarabilir, kaptanlığı devredebilir, kodu yenileyebilir;
+   unutulan öğrenci şifresini mentör ya da yönetim sıfırlar. Yönetim → Takımlar → **Öğrenciler**
+   tablosunda tüm hesaplar görünür; öğrenci koda gerek olmadan takıma konabilir. "Öğrenciler hesap
+   açabilir" ve "Öğrenciler takım kurabilir" anahtarları kayıtları ve takım kurmayı kapatır.
+   Teslim kapanınca ekip değiştirilemez. Takımın ortak kullanıcı adı ve şifresi de çalışmaya devam eder.
+3. **Takımlar sayfalarını hazırlar** (`/takim`): oyun adı, kısa tanıtım, kapak, web sürümü (ZIP),
    indirilebilir sürüm, tanıtım metni, ekip ve görevleri, ekran görüntüleri, oynanış videosu
    (YouTube), hazır içerik/YZ beyanı. Sağdaki kontrol listesi kurallardaki zorunlu içeriği gösterir.
    Oyun adı girilen sayfa vitrinde görünür.
-3. **Yönetim → Genel bakış → Teslim açık** kapatılınca sayfalar kilitlenir. Yönetici,
+4. **Yönetim → Genel bakış → Teslim açık** kapatılınca sayfalar kilitlenir. Yönetici,
    Takımlar tablosundaki kalem simgesiyle her takımın sayfasını yine düzenleyebilir.
-4. **Jüriler** eklenir (Yönetim → Jüriler), **Oylama açık** yapılır. Jüriler `/juri`'de her
+5. **Jüriler** eklenir (Yönetim → Jüriler), **Oylama açık** yapılır. Jüriler `/juri`'de her
    kritere 0–azami arası puan verir, isterse not düşer. Notları yalnızca jüri ve yönetici görür.
-5. **Sonuçlar** sekmesinde sıralama, kriter ortalamaları ve jüri ayrıntısı görünür; XLSX indirilir.
+6. **Sonuçlar** sekmesinde sıralama, kriter ortalamaları ve jüri ayrıntısı görünür; XLSX indirilir.
    "Rozet" sütununa "1.", "Jüri Özel Ödülü", "Sergilenmeye Değer" gibi ödüller yazılır.
-6. **Sonuçlar açıklandı** açılınca rozetler vitrinde "Ödül alan oyunlar" bölümünde ve kartlarda
+7. **Sonuçlar açıklandı** açılınca rozetler vitrinde "Ödül alan oyunlar" bölümünde ve kartlarda
    görünür. Puanlar hiçbir zaman herkese açık olmaz.
 
 - **Tema açıklama anı:** Genel bakış'taki **Tema başlangıçta açıklansın** açıksa (varsayılan),
@@ -104,9 +117,9 @@ Discord'daki gibi kullanım:
   sunulur; yedek dosyasına girmez (kayıtları girer).
 - Sağdaki **Üyeler** listesi kanalı görebilenleri gösterir; yeşil nokta son bir dakikada
   platformda olanları gösterir. Üst sağdaki kişi simgesiyle açılıp kapanır.
-- **Yazan öğrenci:** Takım tek hesapla girer. Oyun sayfasına ekip üyeleri girildiyse mesaj
-  kutusunun altında "Yazan" seçilir (tarayıcı hatırlar). Mesajda öğrencinin adı, yanında
-  takım adı görünür. Ad seçime dayanır, şifreyle doğrulanmaz.
+- **Yazan öğrenci:** Öğrenci kendi hesabıyla girdiyse mesajda kendi adı, yanında takım adı görünür;
+  yalnızca kendi mesajlarını düzenleyip silebilir. Takımın ortak hesabıyla girildiyse oyun sayfasındaki
+  ekip üyelerinden "Yazan" seçilir (tarayıcı hatırlar); bu ad seçime dayanır, şifreyle doğrulanmaz.
 - **Bildirimler:** Sizden bahsedilince, takıma mentörden yanıt gelince ve (mentör/yönetim için)
   yeni yardım çağrısında kısa bir ses çalar; sekme arka plandaysa tarayıcı bildirimi de çıkar.
   Kanal başlığındaki zil simgesiyle açılıp kapanır.

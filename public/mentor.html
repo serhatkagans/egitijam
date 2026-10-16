@@ -193,6 +193,9 @@ function listeCiz() {
           <div class="oyun-ad">${esc(t.baslik || 'Oyun adı girilmedi')}</div>
           <div class="alt">${esc([t.il, t.okul].filter(Boolean).join(' · '))}</div>
           <div class="alt">Kullanıcı adı: <b>${esc(t.id)}</b>${t.yayinda ? '' : ' · <span style="color:var(--err)">vitrinden kaldırıldı</span>'}</div>
+          <div class="alt">Katılım kodu: <b style="letter-spacing:.08em">${kodGoster(t.kod)}</b>
+            <button class="ikbtn" type="button" data-kod="${esc(t.kod)}" title="Katılım bağlantısını kopyala" aria-label="Katılım bağlantısını kopyala" style="padding:2px;vertical-align:middle">${ik('copy')}</button>
+            · ${t.ogrenciler.length} / ${D.maxOgrenci} öğrenci${t.ogrenciler.length ? ': ' + t.ogrenciler.map(o => esc(o.ad) + (o.kaptan ? ' (kaptan)' : '')).join(', ') : ''}</div>
         </div>
       </div>
       <div class="ilerleme ${pr.tamam === pr.toplam ? 'tam' : ''}">Sayfa: ${pr.tamam} / ${pr.toplam} madde
@@ -209,10 +212,16 @@ function listeCiz() {
   }).join('') : '<div class="kart bos" style="grid-column:1/-1">Eşleşen takım yok</div>';
 }
 $('ara').oninput = listeCiz;
+const kodGoster = k => k ? k.slice(0, 3) + '-' + k.slice(3) : '';
 
 $('liste').addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.yaz) { gorunum('mesajlar'); sohbet.ac('t:' + b.dataset.yaz); }
+  if (b.dataset.kod) {
+    // Öğrenciler bu bağlantıyla kayıt olup ya da giriş yapıp takıma katılır
+    const link = location.origin + location.pathname.replace(/mentor\/?$/, '') + 'takim?kod=' + b.dataset.kod;
+    navigator.clipboard.writeText(`Katılım kodu: ${kodGoster(b.dataset.kod)}\n${link}`).then(() => bildir('Katılım kodu ve bağlantısı kopyalandı', 'o'), () => prompt('Kopyalayın:', link));
+  }
   if (b.dataset.sifre) {
     const t = D.takimlar.find(x => x.id === b.dataset.sifre);
     if (!confirm(`${t.ad} takımının şifresi sıfırlanacak; eski şifre çalışmayacak ve açık oturumları kapanacak. Devam edilsin mi?`)) return;
@@ -227,7 +236,7 @@ function bilgiGoster(l) {
   $('girisAdres').textContent = location.origin + location.pathname.replace(/mentor\/?$/, '') + 'takim';
   $('bilgiPencere').classList.remove('hidden');
 }
-$('bilgiKopyala').onclick = () => navigator.clipboard.writeText(bilgi.map(t => `${t.ad}\nGiriş: ${$('girisAdres').textContent}\nKullanıcı adı: ${t.id}\nŞifre: ${t.sifre}`).join('\n\n')).then(() => bildir('Kopyalandı'));
+$('bilgiKopyala').onclick = () => navigator.clipboard.writeText(bilgi.map(t => `${t.ad}\nGiriş: ${$('girisAdres').textContent}\nKullanıcı adı: ${t.id}\nŞifre: ${t.sifre}${t.kod ? `\nÖğrenci katılım kodu: ${kodGoster(t.kod)}` : ''}`).join('\n\n')).then(() => bildir('Kopyalandı'));
 
 $('takimEkle').onclick = () => { $('tpHata').textContent = ''; $('takimPencere').classList.remove('hidden'); $('tpAd').focus(); };
 $('takimForm').onsubmit = async e => {
