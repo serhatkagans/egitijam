@@ -2230,6 +2230,13 @@ async function mentorRoutes(req, res, url) {
     const b = await readBody(req);
     const t = tx(() => { const t = createTeam({ ad: b.ad, il: b.il, okul: b.okul, danisman: b.danisman || mentor.ad }); MQ.assign.run(mentor.id, t.id); return t; });
     extra.yeni = [t];
+  } else if (m === 'PUT' && p === 'takim') {
+    // Mentör takımının adını, ilini, okulunu ve danışmanını düzenler; vitrin durumu ve rozet yönetimde kalır
+    const b = await readBody(req), row = getTeam(b.id);
+    if (!isAssigned(mentor.id, row.id)) fail(403, 'Bu takım size atanmamış');
+    const ad = str(b.ad, 80);
+    if (!ad) fail(400, 'Takım adı boş bırakılamaz');
+    Q.updateTeamInfo.run(ad, str(b.il, 40), str(b.okul, 120), str(b.danisman, 80), row.yayinda, row.rozet, row.id);
   } else if (m === 'POST' && p === 'takim-sifre') {
     const row = getTeam((await readBody(req)).id);
     if (!isAssigned(mentor.id, row.id)) fail(403, 'Bu takım size atanmamış');
